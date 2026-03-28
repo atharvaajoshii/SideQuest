@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function PostTask() {
   const [taskData, setTaskData] = useState({
@@ -7,15 +8,16 @@ export default function PostTask() {
     price: '',
     category: 'Coding',
   });
-
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
-    // ✅ Validation
     if (!taskData.title || !taskData.description || !taskData.price) {
       setError('Please fill all fields');
       return;
@@ -36,38 +38,26 @@ export default function PostTask() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': token
+          // ✅ FIX: always add "Bearer " here — token stored raw
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: taskData.title.trim(),
           description: taskData.description.trim(),
           price: Number(taskData.price),
-          category: taskData.category
-        })
+          category: taskData.category,
+        }),
       });
 
       let data;
-      try {
-        data = await response.json();
-      } catch {
-        data = {};
-      }
+      try { data = await response.json(); } catch { data = {}; }
 
       if (response.ok) {
-        alert('✅ Task posted successfully!');
-        
-        // reset form
-        setTaskData({
-          title: '',
-          description: '',
-          price: '',
-          category: 'Coding'
-        });
-
+        // ✅ FIX: navigate to the new task instead of alert()
+        navigate(`/tasks/${data.id}`);
       } else {
         setError(data.message || 'Failed to post task');
       }
-
     } catch (err) {
       setError('Server error. Is backend running?');
     }
@@ -78,7 +68,6 @@ export default function PostTask() {
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto bg-white p-8 md:p-10 rounded-2xl shadow-sm border border-slate-200">
-        
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-slate-900">Post a SideQuest ✍️</h1>
           <p className="text-slate-500 mt-2">
@@ -86,7 +75,6 @@ export default function PostTask() {
           </p>
         </div>
 
-        {/* ❌ Error Display */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm font-medium text-center mb-6">
             {error}
@@ -94,8 +82,6 @@ export default function PostTask() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
-          {/* Title */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Quest Title</label>
             <input
@@ -108,7 +94,6 @@ export default function PostTask() {
             />
           </div>
 
-          {/* Description */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Details & Requirements</label>
             <textarea
@@ -122,8 +107,6 @@ export default function PostTask() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* Category */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Category</label>
               <select
@@ -139,7 +122,6 @@ export default function PostTask() {
               </select>
             </div>
 
-            {/* Price */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Reward (₹)</label>
               <div className="relative">
@@ -148,26 +130,24 @@ export default function PostTask() {
                   type="number"
                   value={taskData.price}
                   required
+                  min="1"
                   className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-primary focus:border-primary transition"
                   placeholder="500"
                   onChange={(e) => setTaskData({ ...taskData, price: e.target.value })}
                 />
               </div>
             </div>
-
           </div>
 
-          {/* Submit Button */}
           <div className="pt-4">
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-md text-lg font-bold text-white bg-primary hover:bg-indigo-700 transition"
+              className="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-md text-lg font-bold text-white bg-primary hover:bg-indigo-700 transition disabled:opacity-60"
             >
               {loading ? 'Posting...' : 'Post Quest to Marketplace'}
             </button>
           </div>
-
         </form>
       </div>
     </div>

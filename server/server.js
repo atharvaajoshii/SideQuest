@@ -18,9 +18,9 @@ process.on('unhandledRejection', (err) => {
 app.use(cors());
 app.use(express.json());
 
-// 🔥 REQUEST LOGGER
+// Request logger
 app.use((req, res, next) => {
-  console.log(`➡️ ${req.method} ${req.url}`);
+  console.log(`➡️  ${req.method} ${req.url}`);
   next();
 });
 
@@ -28,12 +28,12 @@ app.use((req, res, next) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tasks', require('./routes/tasks'));
 
-// Test route
+// Health check
 app.get('/', (req, res) => {
-  res.send('SideQuest API is running! 🚀');
+  res.json({ message: 'SideQuest API is running! 🚀' });
 });
 
-// 🔥 GLOBAL ERROR HANDLER
+// Global error handler
 app.use((err, req, res, next) => {
   console.error("🔥 GLOBAL ERROR:", err);
   res.status(500).json({ error: err.message });
@@ -41,9 +41,9 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, '127.0.0.1', () => {
+// ✅ FIX: removed '127.0.0.1' — listen on all interfaces
+app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
-// 🔥 KEEP PROCESS ALIVE (TEMP FIX)
-setInterval(() => {}, 1000);
+// ✅ FIX: removed the setInterval hack

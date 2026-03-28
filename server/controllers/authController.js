@@ -7,7 +7,6 @@ require('dotenv').config();
 exports.register = async (req, res) => {
   try {
     console.log("🔥 REGISTER REQUEST RECEIVED");
-    console.log(req.body);
 
     const { name, email, password } = req.body;
 
@@ -15,7 +14,6 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if user exists
     const userCheck = await pool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
@@ -25,11 +23,9 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Insert user
     const newUser = await pool.query(
       `INSERT INTO users (name, email, password, role)
        VALUES ($1, $2, $3, $4)
@@ -37,24 +33,20 @@ exports.register = async (req, res) => {
       [name, email, hashedPassword, 'user']
     );
 
-    // Create token
+    const user = newUser.rows[0];
+
+    // ✅ FIX: Include id, email, AND role in token payload
     const token = jwt.sign(
-      { id: newUser.rows[0].id },
+      { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    res.status(201).json({
-      token,
-      user: newUser.rows[0]
-    });
+    res.status(201).json({ token, user });
 
   } catch (err) {
     console.error("❌ REGISTER ERROR:", err);
-
-    res.status(500).json({
-      error: err.message
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -64,6 +56,10 @@ exports.login = async (req, res) => {
     console.log("🔥 LOGIN REQUEST RECEIVED");
 
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     const userResult = await pool.query(
       'SELECT * FROM users WHERE email = $1',
@@ -82,8 +78,9 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
+    // ✅ FIX: Include id, email, AND role in token payload
     const token = jwt.sign(
-      { id: user.id },
+      { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -94,15 +91,13 @@ exports.login = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        wallet_balance: user.wallet_balance,
       }
     });
 
   } catch (err) {
     console.error("❌ LOGIN ERROR:", err);
-
-    res.status(500).json({
-      error: err.message
-    });
+    res.status(500).json({ error: err.message });
   }
 };
