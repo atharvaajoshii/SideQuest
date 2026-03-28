@@ -1,9 +1,17 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: "#4F46E5", // Modern Indigo
+        secondary: "#10B981", // Success Green for earning money
+        dark: "#1E293B",
+      }
+    },
   },
   plugins: [],
 }
-
