@@ -56,7 +56,7 @@ export default function AdminSettings() {
 
           {/* Save Button */}
           <div className="pt-4 flex justify-end">
-            <button className="px-6 py-3 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center gap-2">
+            <button className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-md hover:bg-primary transition flex items-center gap-2">
               <Save size={18} /> Save Changes
             </button>
           </div>

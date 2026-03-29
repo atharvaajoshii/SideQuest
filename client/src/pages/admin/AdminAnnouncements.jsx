@@ -27,7 +27,7 @@ export default function AdminAnnouncements() {
             onChange={(e) => setAnnouncement(e.target.value)}
           ></textarea>
           <div className="flex justify-end">
-            <button className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center gap-2">
+            <button className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl shadow-md hover:bg-primary transition flex items-center gap-2">
               <Send size={18} /> Publish to Platform
             </button>
           </div>

@@ -28,7 +28,7 @@ export default function Landing() {
           <Link to="/signin" className="px-5 py-2 font-medium text-slate-600 hover:text-primary transition">
             Log In
           </Link>
-          <Link to="/signup" className="px-5 py-2 font-medium bg-primary text-white rounded-lg hover:bg-indigo-700 transition shadow-md">
+          <Link to="/signup" className="px-5 py-2 font-medium bg-slate-900 text-white rounded-lg hover:bg-primary transition shadow-md">
             Sign Up Free
           </Link>
         </div>
@@ -50,7 +50,7 @@ export default function Landing() {
         </p>
         
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
-          <Link to="/signup" className="flex items-center gap-2 px-8 py-4 bg-primary text-white text-lg font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg hover:shadow-indigo-300">
+          <Link to="/signup" className="flex items-center gap-2 px-8 py-4 bg-slate-900 text-white text-lg font-bold rounded-xl hover:bg-primary transition shadow-lg hover:shadow-indigo-300">
             Start Earning Now <ArrowRight size={20} />
           </Link>
           <Link to="/search" className="px-8 py-4 bg-white text-slate-700 text-lg font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition shadow-sm">

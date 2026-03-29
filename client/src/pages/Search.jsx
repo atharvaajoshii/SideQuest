@@ -80,7 +80,7 @@ export default function Search() {
               onClick={() => setSelectedCategory(cat)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${
                 selectedCategory === cat
-                  ? 'bg-primary text-white shadow-md'
+                  ? 'bg-slate-900 text-white shadow-md'
                   : 'bg-white text-slate-600 border border-slate-200 hover:border-primary hover:text-primary'
               }`}
             >

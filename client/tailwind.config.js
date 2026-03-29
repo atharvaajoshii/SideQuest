@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#4F46E5", // Modern Indigo
+        primary: "#4338CA", // Deep Indigo - better visibility
         secondary: "#10B981", // Success Green for earning money
         dark: "#1E293B",
       }

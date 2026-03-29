@@ -49,7 +49,7 @@ export default function TaskDetail() {
               <DollarSign size={32} />300
             </div>
             
-            <Link to={`/negotiate/${id || '123'}`} className="block w-full bg-primary text-white py-4 rounded-xl font-bold shadow-md hover:bg-indigo-700 transition mb-3">
+            <Link to={`/negotiate/${id || '123'}`} className="block w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-md hover:bg-primary transition mb-3">
               Make an Offer
             </Link>
             <p className="text-xs text-slate-400">You can negotiate the final price with the poster.</p>
@@ -58,15 +58,15 @@ export default function TaskDetail() {
           {/* Poster Info */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <h3 className="text-lg font-bold text-slate-900 mb-4">About the Poster</h3>
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-bold">
+            <Link to="/freelancer/123" className="flex items-center gap-4 mb-4 group">
+              <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-bold group-hover:bg-primary group-hover:text-white transition">
                 <User size={24} />
               </div>
               <div>
-                <h4 className="font-bold text-slate-900">Sarah Jenkins</h4>
+                <h4 className="font-bold text-slate-900 group-hover:text-primary transition">Sarah Jenkins</h4>
                 <p className="text-sm text-slate-500">Joined 2025</p>
               </div>
-            </div>
+            </Link>
             <div className="text-sm text-slate-600">
               <span className="font-bold text-slate-900">5</span> quests posted • <span className="font-bold text-slate-900">100%</span> pay rate
             </div>

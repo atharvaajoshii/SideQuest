@@ -143,7 +143,7 @@ export default function PostTask() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-md text-lg font-bold text-white bg-primary hover:bg-indigo-700 transition disabled:opacity-60"
+              className="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-md text-lg font-bold text-white bg-slate-900 hover:bg-primary transition disabled:opacity-60"
             >
               {loading ? 'Posting...' : 'Post Quest to Marketplace'}
             </button>

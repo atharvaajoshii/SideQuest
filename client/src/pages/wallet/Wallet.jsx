@@ -22,7 +22,7 @@ export default function Wallet() {
             <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-8">₹1,250<span className="text-2xl text-slate-400">.00</span></h1>
             
             <div className="flex flex-col sm:flex-row gap-4 mt-6">
-              <button className="flex-1 bg-primary text-white py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-600 transition">
+              <button className="flex-1 bg-slate-900 text-white py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary transition">
                 <Plus size={20} /> Add Funds
               </button>
               <button className="flex-1 bg-white text-slate-900 py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-100 transition">

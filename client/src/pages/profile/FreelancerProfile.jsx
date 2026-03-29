@@ -19,7 +19,7 @@ export default function FreelancerProfile() {
               <Star fill="currentColor" size={20} /> 4.9 <span className="text-slate-400 text-sm font-normal">(12 reviews)</span>
             </div>
 
-            <button className="w-full bg-primary text-white py-3 rounded-xl font-bold shadow-md hover:bg-indigo-700 transition flex justify-center items-center gap-2">
+            <button className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold shadow-md hover:bg-primary transition flex justify-center items-center gap-2">
               <MessageSquare size={18} /> Message Alex
             </button>
           </div>

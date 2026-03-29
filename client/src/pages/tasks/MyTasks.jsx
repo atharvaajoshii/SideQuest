@@ -17,7 +17,7 @@ export default function MyTasks() {
             <h1 className="text-3xl font-extrabold text-slate-900">My Posted Quests</h1>
             <p className="text-slate-500 mt-1">Manage the tasks you've asked others to do.</p>
           </div>
-          <Link to="/tasks/post" className="px-5 py-2.5 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition">
+          <Link to="/tasks/post" className="px-5 py-2.5 bg-slate-900 text-white font-bold rounded-xl shadow-md hover:bg-primary transition">
             + Post New
           </Link>
         </div>

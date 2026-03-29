@@ -6,8 +6,8 @@ import Landing from './pages/Landing';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import SignIn from './pages/auth/SignIn';
-import SignUp from './pages/auth/SignUp';
-import PostTask from './pages/tasks/PostTask';
+  import SignUp from './pages/auth/SignUp';
+  import PostTask from './pages/tasks/PostTask';
 import TaskDetail from './pages/tasks/TaskDetail';
 import MyTasks from './pages/tasks/MyTasks';
 import UserProfile from './pages/profile/UserProfile';
@@ -15,6 +15,7 @@ import FreelancerProfile from './pages/profile/FreelancerProfile';
 import OrderPage from './pages/orders/OrderPage';
 import Negotiation from './pages/orders/Negotiation';
 import Wallet from './pages/wallet/Wallet';
+import AdminLayout from './components/AdminLayout';
 import AdminHome from './pages/admin/AdminHome';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminTasks from './pages/admin/AdminTasks';
@@ -66,14 +67,16 @@ function App() {
           <Route path="/wallet" element={<Wallet />} />
         </Route>
 
-        {/* ADMIN — needs admin role */}
-        <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
-        <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-        <Route path="/admin/tasks" element={<AdminRoute><AdminTasks /></AdminRoute>} />
-        <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
-        <Route path="/admin/stats" element={<AdminRoute><AdminStats /></AdminRoute>} />
-        <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
-        <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
+        {/* ADMIN — needs admin role + persistent sidebar */}
+        <Route element={<AdminRoute><AdminLayout /></AdminRoute>}>
+          <Route path="/admin" element={<AdminHome />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/tasks" element={<AdminTasks />} />
+          <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+          <Route path="/admin/stats" element={<AdminStats />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
+        </Route>
       </Routes>
     </Router>
   );

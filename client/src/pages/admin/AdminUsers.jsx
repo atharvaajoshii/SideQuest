@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Ban, Search } from 'lucide-react';
+import { Link, Shield, Ban, Search } from 'lucide-react';
 
 export default function AdminUsers() {
   const users = [
@@ -34,7 +34,11 @@ export default function AdminUsers() {
             <tbody className="divide-y divide-slate-100">
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-slate-50 transition">
-                  <td className="p-4 font-bold text-slate-900">{user.name}</td>
+                  <td className="p-4">
+                    <Link to={`/freelancer/${user.id}`} className="font-bold text-slate-900 hover:text-primary transition">
+                      {user.name}
+                    </Link>
+                  </td>
                   <td className="p-4 text-slate-600">{user.email}</td>
                   <td className="p-4">
                     {user.role === 'admin' ? (

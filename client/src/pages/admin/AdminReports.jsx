@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, CheckCircle, Ban, Eye } from 'lucide-react';
+import { Link, AlertTriangle, CheckCircle, Ban, Eye } from 'lucide-react';
 
 export default function AdminReports() {
   const pendingReports = [
@@ -35,7 +35,11 @@ export default function AdminReports() {
                   </td>
                   <td className="p-4 font-bold text-slate-900">{report.target}</td>
                   <td className="p-4 text-red-600 font-medium">{report.reason}</td>
-                  <td className="p-4 text-slate-500 text-sm">{report.reportedBy}</td>
+                  <td className="p-4">
+                    <Link to={`/freelancer/${report.reportedBy}`} className="text-slate-500 text-sm hover:text-primary transition">
+                      {report.reportedBy}
+                    </Link>
+                  </td>
                   <td className="p-4 flex justify-center gap-2">
                     <button className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition" title="View Details">
                       <Eye size={16} />

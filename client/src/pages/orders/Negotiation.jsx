@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, User } from 'lucide-react';
+import { Link, Send, User } from 'lucide-react';
 
 export default function Negotiation() {
   const [message, setMessage] = useState('');
@@ -10,15 +10,15 @@ export default function Negotiation() {
         
         {/* Chat Header */}
         <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-indigo-100 text-primary rounded-full flex items-center justify-center font-bold">
+          <Link to="/freelancer/456" className="flex items-center gap-3 group">
+            <div className="h-10 w-10 bg-indigo-100 text-primary rounded-full flex items-center justify-center font-bold group-hover:bg-primary group-hover:text-white transition">
               <User size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900">Alex (Freelancer)</h3>
+              <h3 className="font-bold text-slate-900 group-hover:text-primary transition">Alex (Freelancer)</h3>
               <p className="text-xs text-slate-500">Task: Debug React Assignment</p>
             </div>
-          </div>
+          </Link>
           <div className="text-right">
             <span className="text-sm text-slate-500 block">Current Offer</span>
             <span className="text-xl font-extrabold text-secondary">₹350</span>
@@ -61,7 +61,7 @@ export default function Negotiation() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
-            <button type="submit" className="px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-indigo-700 transition flex items-center gap-2">
+            <button type="submit" className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-primary transition flex items-center gap-2">
               <Send size={18} />
             </button>
           </form>

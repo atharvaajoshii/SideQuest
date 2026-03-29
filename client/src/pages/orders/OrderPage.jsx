@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, Clock, CheckSquare } from 'lucide-react';
+import { Link, CheckCircle, Clock, CheckSquare } from 'lucide-react';
 
 export default function OrderPage() {
   return (
@@ -49,10 +49,10 @@ export default function OrderPage() {
 
           {/* Action Area */}
           <div className="p-8 bg-slate-50 flex gap-4">
-            <button className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-100 transition">
-              Message Alex
-            </button>
-            <button className="flex-1 bg-primary text-white py-3 rounded-xl font-bold shadow-md hover:bg-indigo-700 transition">
+            <Link to="/freelancer/456" className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-100 transition text-center">
+              View Alex's Profile
+            </Link>
+            <button className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold shadow-md hover:bg-primary transition">
               Mark as Completed
             </button>
           </div>

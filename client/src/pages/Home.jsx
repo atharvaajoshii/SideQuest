@@ -292,10 +292,10 @@ export default function Home() {
                   <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 100, background: 'rgba(0,200,151,0.09)', color: '#008a66' }}>🙋 {task.applicants} applicants</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #F0EEE8' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#6B6B85' }}>
+                  <a href={`/freelancer/${task.poster.id || 1}`} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#6B6B85', textDecoration: 'none' }} className="hover:text-primary transition">
                     <Avatar initials={task.poster.initials} bg={task.accent} size={22} />
-                    Posted by {task.poster.name} · {task.poster.postedAt}
-                  </div>
+                    <span className="hover:underline">Posted by {task.poster.name}</span> · {task.poster.postedAt}
+                  </a>
                   <button
                     onClick={e => { e.stopPropagation(); navigate(`/tasks/${task.id}`); }}
                     style={{ background: '#1A1A2E', color: '#fff', border: 'none', borderRadius: 100, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
