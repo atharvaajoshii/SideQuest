@@ -41,7 +41,7 @@ export default function Landing() {
         </div>
         <h1 className="text-5xl md:text-7xl font-extrabold text-dark max-w-4xl leading-tight tracking-tight">
           Complete Tasks. <br/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-purple-500">
             Earn Your Stipend.
           </span>
         </h1>
@@ -113,7 +113,7 @@ export default function Landing() {
                   <span className="text-xs font-bold text-primary bg-indigo-900/50 px-3 py-1 rounded-full w-max mb-4">
                     {quest.tag}
                   </span>
-                  <h3 className="text-lg font-bold mb-2 flex-grow">{quest.title}</h3>
+                  <h3 className="text-lg font-bold mb-2 grow">{quest.title}</h3>
                   <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-700">
                     <span className="text-secondary font-bold text-xl">{quest.price}</span>
                     <button className="text-sm bg-white text-dark font-bold px-4 py-1.5 rounded-lg hover:bg-slate-200 transition">
