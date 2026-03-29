@@ -66,7 +66,7 @@ export default function AdminLayout() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-grow ml-64 p-8">
+      <div className="grow ml-64 p-8">
         <Outlet />
       </div>
     </div>
