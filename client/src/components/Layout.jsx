@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { User, Wallet, Search, Home, PlusCircle, LogOut } from 'lucide-react';
+import { Home, Search, PlusCircle, LogOut, Wallet, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Layout() {
@@ -13,88 +13,227 @@ export default function Layout() {
     navigate('/signin');
   };
 
-  // Get initials from name e.g. "John Doe" → "JD"
   const initials = user?.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : '??';
 
-  return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-      {/* Navbar */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
+  const isActive = (path) =>
+    path === '/home'
+      ? location.pathname === '/home'
+      : location.pathname.startsWith(path);
 
-            {/* Logo */}
-            <Link to="/home" className="text-2xl font-extrabold text-primary tracking-tight">
-              ⚔️ SideQuest
+  const navLinks = [
+    { to: '/home',        label: 'Home',         icon: <Home size={15} /> },
+    { to: '/search',      label: 'Browse',        icon: <Search size={15} /> },
+    { to: '/tasks/mine',  label: 'My Tasks',      icon: null },
+    { to: '/messages',    label: 'Messages',      icon: null },
+  ];
+
+  return (
+    <>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap');`}</style>
+
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'DM Sans', sans-serif" }}>
+
+        {/* ── NAVBAR ─────────────────────────────────────────────────── */}
+        <nav style={{
+          background: '#1A1A2E',
+          padding: '0 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          height: 56,
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+        }}>
+          {/* Logo */}
+          <Link to="/home" style={{ textDecoration: 'none' }}>
+            <span style={{
+              fontFamily: "'Syne', sans-serif",
+              fontWeight: 800,
+              fontSize: 20,
+              color: '#FFD93D',
+              letterSpacing: -0.5,
+            }}>
+              SideQuest<span style={{ color: '#fff' }}>.</span>
+            </span>
+          </Link>
+
+          {/* Nav links */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {navLinks.map(({ to, label, icon }) => (
+              <Link key={to} to={to} style={{ textDecoration: 'none' }}>
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  color: isActive(to) ? '#FFD93D' : 'rgba(255,255,255,0.6)',
+                  background: isActive(to) ? 'rgba(255,217,61,0.12)' : 'transparent',
+                  padding: '6px 14px',
+                  borderRadius: 100,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  transition: 'all 0.15s',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {icon}
+                  {label}
+                </span>
+              </Link>
+            ))}
+          </div>
+
+          {/* Right side */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Post Quest CTA */}
+            <Link to="/tasks/post" style={{ textDecoration: 'none' }}>
+              <button style={{
+                background: '#FFD93D',
+                color: '#1A1A2E',
+                border: 'none',
+                borderRadius: 100,
+                padding: '7px 16px',
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'background 0.15s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = '#e6c235'}
+                onMouseLeave={e => e.currentTarget.style.background = '#FFD93D'}
+              >
+                <PlusCircle size={14} /> Post Quest
+              </button>
             </Link>
 
-            {/* Nav Links */}
-            <div className="hidden md:flex space-x-8 items-center">
-              <Link to="/home" className={`flex items-center gap-1 font-medium transition ${location.pathname === '/home' ? 'text-primary' : 'text-slate-600 hover:text-primary'}`}>
-                <Home size={18} /> Dashboard
-              </Link>
-              <Link to="/search" className={`flex items-center gap-1 font-medium transition ${location.pathname === '/search' ? 'text-primary' : 'text-slate-600 hover:text-primary'}`}>
-                <Search size={18} /> Browse Quests
-              </Link>
-              <Link to="/tasks/mine" className={`flex items-center gap-1 font-medium transition ${location.pathname.includes('/tasks/mine') ? 'text-primary' : 'text-slate-600 hover:text-primary'}`}>
-                📋 My Tasks
-              </Link>
-            </div>
+            {/* Wallet */}
+            <Link
+              to="/wallet"
+              title={`Wallet: ₹${parseFloat(user?.wallet_balance || 0).toFixed(2)}`}
+              style={{ textDecoration: 'none' }}
+            >
+              <div style={{
+                width: 34, height: 34, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(255,255,255,0.65)',
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
+              >
+                <Wallet size={15} />
+              </div>
+            </Link>
 
-            {/* Right side */}
-            <div className="flex items-center gap-3">
-              <Link to="/tasks/post"
-                className="hidden md:flex items-center gap-1 bg-indigo-50 text-primary px-4 py-2 rounded-lg font-bold hover:bg-indigo-100 transition">
-                <PlusCircle size={18} /> Post Quest
-              </Link>
+            {/* Notifications */}
+            <Link to="/notifications" style={{ textDecoration: 'none', position: 'relative' }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(255,255,255,0.65)',
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
+              >
+                <Bell size={15} />
+                {/* Notification dot — wire to real unread count */}
+                <div style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: '#FF6B35',
+                  position: 'absolute', top: 6, right: 6,
+                  border: '1.5px solid #1A1A2E',
+                }} />
+              </div>
+            </Link>
 
-              <Link to="/wallet"
-                className="text-slate-600 hover:text-secondary transition p-2 bg-slate-50 rounded-full border border-slate-200"
-                title={`Wallet: ₹${parseFloat(user?.wallet_balance || 0).toFixed(2)}`}>
-                <Wallet size={20} />
-              </Link>
-
-              {/* Avatar with initials → goes to profile */}
-              <Link to="/profile"
-                className="w-9 h-9 bg-indigo-100 text-primary rounded-full flex items-center justify-center font-bold text-sm border border-indigo-200 hover:bg-indigo-200 transition"
-                title={user?.name}>
+            {/* Avatar */}
+            <Link to="/profile" title={user?.name} style={{ textDecoration: 'none' }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: '50%',
+                background: '#FFD93D',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 800, fontSize: 12,
+                color: '#1A1A2E',
+                cursor: 'pointer',
+                border: '2px solid rgba(255,217,61,0.35)',
+                transition: 'opacity 0.15s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              >
                 {initials}
-              </Link>
+              </div>
+            </Link>
 
-              {/* Logout button */}
-              <button onClick={handleLogout}
-                className="text-slate-400 hover:text-red-500 transition p-2 rounded-full"
-                title="Sign out">
-                <LogOut size={18} />
-              </button>
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              style={{
+                width: 34, height: 34, borderRadius: '50%',
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(255,255,255,0.4)',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.12)'; e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.borderColor = 'rgba(255,80,80,0.25)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
+        </nav>
+
+        {/* ── PAGE CONTENT ────────────────────────────────────────────── */}
+        <main style={{ flexGrow: 1, background: '#F7F6F2' }}>
+          <Outlet />
+        </main>
+
+        {/* ── FOOTER ──────────────────────────────────────────────────── */}
+        <footer style={{
+          background: '#1A1A2E',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          padding: '36px 24px',
+        }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
+            <div style={{
+              fontFamily: "'Syne', sans-serif",
+              fontWeight: 800, fontSize: 20,
+              color: '#FFD93D', marginBottom: 6,
+            }}>
+              SideQuest<span style={{ color: '#fff' }}>.</span>
             </div>
-
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>
+              Built for students, by students.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 24, fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 24 }}>
+              {user?.role === 'admin' && (
+                <Link to="/admin" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: 'color 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                >Admin Panel</Link>
+              )}
+              <span style={{ cursor: 'pointer' }}>Terms of Service</span>
+              <span style={{ cursor: 'pointer' }}>Support</span>
+            </div>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© 2026 SideQuest. All rights reserved.</p>
           </div>
-        </div>
-      </nav>
+        </footer>
 
-      {/* Page Content */}
-      <main className="flex-grow">
-        <Outlet />
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-xl font-bold text-white mb-2">⚔️ SideQuest</h2>
-          <p className="text-sm mb-4">Built for students, by students.</p>
-          <div className="flex justify-center gap-6 text-sm">
-            {user?.role === 'admin' && (
-              <Link to="/admin" className="hover:text-white transition">Admin Panel</Link>
-            )}
-            <span className="cursor-pointer hover:text-white transition">Terms of Service</span>
-            <span className="cursor-pointer hover:text-white transition">Support</span>
-          </div>
-          <p className="text-xs text-slate-500 mt-6">© 2026 SideQuest. All rights reserved.</p>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </>
   );
 }
