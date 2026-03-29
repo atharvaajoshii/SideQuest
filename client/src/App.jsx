@@ -23,6 +23,7 @@ import AdminAnnouncements from './pages/admin/AdminAnnouncements';
 import AdminStats from './pages/admin/AdminStats';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminReports from './pages/admin/AdminReports';
+import AdminProfile from './pages/admin/AdminProfile';
 
 // Blocks logged-out users from accessing app pages
 function ProtectedRoute({ children }) {
@@ -76,6 +77,7 @@ function App() {
           <Route path="/admin/stats" element={<AdminStats />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/profile" element={<AdminProfile />} />
         </Route>
       </Routes>
     </Router>

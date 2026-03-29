@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Users, Briefcase, AlertTriangle, TrendingUp, Megaphone, Settings, BarChart2, ArrowLeft } from 'lucide-react';
+import { Users, Briefcase, AlertTriangle, TrendingUp, Megaphone, Settings, BarChart2, ArrowLeft, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function AdminLayout() {
@@ -21,6 +21,7 @@ export default function AdminLayout() {
     { to: '/admin/tasks', label: 'Manage Tasks', icon: <Briefcase size={18} /> },
     { to: '/admin/reports', label: 'Review Reports', icon: <AlertTriangle size={18} /> },
     { to: '/admin/announcements', label: 'Announcements', icon: <Megaphone size={18} /> },
+    { to: '/admin/profile', label: 'My Profile', icon: <User size={18} /> },
     { to: '/admin/settings', label: 'Settings', icon: <Settings size={18} /> },
   ];
 
