@@ -24,7 +24,7 @@ const MOCK_TASKS = [
     deadline: '3 days',
     applicants: 4,
     skills: ['Figma', 'UI/UX'],
-    poster: { name: 'Riya S.', initials: 'RS', postedAt: '2h ago', id: 3 }, // Rahul
+    poster: { name: 'Riya S.', initials: 'RS', postedAt: '2h ago' },
     accent: '#FF6B35',
   },
   {
@@ -35,7 +35,7 @@ const MOCK_TASKS = [
     deadline: '2 days',
     applicants: 7,
     skills: ['Node.js', 'PostgreSQL'],
-    poster: { name: 'Mihail K.', initials: 'MK', postedAt: '5h ago', id: 4 }, // Priya
+    poster: { name: 'Mihail K.', initials: 'MK', postedAt: '5h ago' },
     accent: '#6C5CE7',
   },
   {
@@ -46,7 +46,7 @@ const MOCK_TASKS = [
     deadline: '5 days',
     applicants: 2,
     skills: ['Writing', 'SEO'],
-    poster: { name: 'Ananya P.', initials: 'AP', postedAt: '1d ago', id: 5 }, // Arjun
+    poster: { name: 'Ananya P.', initials: 'AP', postedAt: '1d ago' },
     accent: '#00C897',
   },
   {
@@ -57,7 +57,7 @@ const MOCK_TASKS = [
     deadline: '4 days',
     applicants: 1,
     skills: ['Video Edit', 'Premiere'],
-    poster: { name: 'Vihaan T.', initials: 'VT', postedAt: '3h ago', id: 2 }, // Atmika2
+    poster: { name: 'Vihaan T.', initials: 'VT', postedAt: '3h ago' },
     accent: '#FF6EB4',
   },
 ];
@@ -292,16 +292,7 @@ export default function Home() {
                   <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 100, background: 'rgba(0,200,151,0.09)', color: '#008a66' }}>🙋 {task.applicants} applicants</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #F0EEE8' }}>
-                  <a
-                    href={`/freelancer/${task.poster.id || 1}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      navigate(`/freelancer/${task.poster.id || 1}`);
-                    }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#6B6B85', textDecoration: 'none', cursor: 'pointer' }}
-                    className="hover:text-primary transition"
-                  >
+                  <a href={`/freelancer/${task.poster.id || 1}`} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#6B6B85', textDecoration: 'none' }} className="hover:text-primary transition">
                     <Avatar initials={task.poster.initials} bg={task.accent} size={22} />
                     <span className="hover:underline">Posted by {task.poster.name}</span> · {task.poster.postedAt}
                   </a>
