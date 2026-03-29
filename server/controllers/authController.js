@@ -35,7 +35,6 @@ exports.register = async (req, res) => {
 
     const user = newUser.rows[0];
 
-    // ✅ FIX: Include id, email, AND role in token payload
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -78,7 +77,6 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // ✅ FIX: Include id, email, AND role in token payload
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -98,6 +96,25 @@ exports.login = async (req, res) => {
 
   } catch (err) {
     console.error("❌ LOGIN ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET ME (restore session from token)
+exports.getMe = async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, email, role, wallet_balance, is_suspended, created_at FROM users WHERE id = $1',
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("❌ GET ME ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 };

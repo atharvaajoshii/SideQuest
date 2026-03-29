@@ -24,6 +24,9 @@ import AdminStats from './pages/admin/AdminStats';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminReports from './pages/admin/AdminReports';
 import AdminProfile from './pages/admin/AdminProfile';
+import Messages from './pages/Messages';
+import MessageDetail from './pages/MessageDetail';
+import Notifications from './pages/Notifications';
 
 // Blocks logged-out users from accessing app pages
 function ProtectedRoute({ children }) {
@@ -66,6 +69,9 @@ function App() {
           <Route path="/orders" element={<OrderPage />} />
           <Route path="/negotiate/:id" element={<Negotiation />} />
           <Route path="/wallet" element={<Wallet />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/messages/:userId" element={<MessageDetail />} />
+          <Route path="/notifications" element={<Notifications />} />
         </Route>
 
         {/* ADMIN — needs admin role + persistent sidebar */}

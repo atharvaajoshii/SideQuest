@@ -18,6 +18,9 @@ router.get('/stats', authMiddleware, userController.getUserStats);
 // GET /api/users - Get all users (protected, admin)
 router.get('/', authMiddleware, userController.getAllUsers);
 
+// GET /api/users/:id - Get user by ID (public) - MUST be before other /:id routes
+router.get('/:id', userController.getUserById);
+
 // PUT /api/users/:id/role - Update user role (protected, admin)
 router.put('/:id/role', authMiddleware, userController.updateUserRole);
 
@@ -26,8 +29,5 @@ router.put('/:id/toggle-status', authMiddleware, userController.toggleUserStatus
 
 // DELETE /api/users/:id - Delete user (protected, admin)
 router.delete('/:id', authMiddleware, userController.deleteUser);
-
-// GET /api/users/:id - Get user by ID (public)
-router.get('/:id', userController.getUserById);
 
 module.exports = router;

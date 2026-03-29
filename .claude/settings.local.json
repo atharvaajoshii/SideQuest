@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(cd C:UsersShrutiDownloadsvs codeprojectsmcSideQuestserver)",
+      "Bash(node -e \"const routes = require\\(''./routes/users''\\); console.log\\(''Routes loaded successfully''\\);\")",
+      "Bash(node -e \"require\\(''dotenv''\\).config\\(\\); const pool = require\\(''./config/db''\\); pool.query\\(''SELECT id, name, email FROM users ORDER BY id LIMIT 10''\\).then\\(r => { console.log\\(''Users in DB:''\\); r.rows.forEach\\(u => console.log\\(''  ID:'', u.id, ''- Name:'', u.name, ''- Email:'', u.email\\)\\); pool.end\\(\\); }\\).catch\\(err => console.error\\(''DB Error:'', err.message\\)\\);\")"
     ]
   }
 }
