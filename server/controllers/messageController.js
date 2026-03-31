@@ -22,7 +22,18 @@ exports.getConversations = async (req, res) => {
             OR (sender_id = u.id AND receiver_id = $1)
          ORDER BY created_at DESC LIMIT 1) AS last_message_time,
         (SELECT COUNT(*) FROM messages
-         WHERE sender_id = u.id AND receiver_id = $1 AND is_read = FALSE) AS unread_count
+         WHERE sender_id = u.id AND receiver_id = $1 AND is_read = FALSE) AS unread_count,
+        (SELECT m2.negotiation_id FROM messages m2
+         WHERE m2.negotiation_id IS NOT NULL
+           AND ((m2.sender_id = $1 AND m2.receiver_id = u.id)
+            OR (m2.sender_id = u.id AND m2.receiver_id = $1))
+         ORDER BY m2.created_at DESC LIMIT 1) AS negotiation_id,
+        (SELECT t.title FROM tasks t
+         INNER JOIN messages m3 ON t.id = m3.negotiation_id
+         WHERE m3.negotiation_id IS NOT NULL
+           AND ((m3.sender_id = $1 AND m3.receiver_id = u.id)
+            OR (m3.sender_id = u.id AND m3.receiver_id = $1))
+         ORDER BY m3.created_at DESC LIMIT 1) AS task_title
       FROM messages m
       JOIN users u ON u.id = CASE
           WHEN m.sender_id = $1 THEN m.receiver_id

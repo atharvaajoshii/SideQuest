@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { MessageCircle, User, Search, Trash2 } from 'lucide-react';
+import { MessageCircle, User, Search, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -12,6 +12,14 @@ export default function Messages() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleting, setDeleting] = useState(null);
+  const [expandedTasks, setExpandedTasks] = useState({});
+
+  const toggleTask = (otherUserId) => {
+    setExpandedTasks(prev => ({
+      ...prev,
+      [otherUserId]: !prev[otherUserId]
+    }));
+  };
 
   useEffect(() => {
     fetchConversations();
@@ -167,6 +175,27 @@ export default function Messages() {
                         {formatTime(conv.last_message_time)}
                       </span>
                     </div>
+                    {/* Task Name - Collapsible */}
+                    {conv.task_title && (
+                      <div className="flex items-center gap-1 mb-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleTask(conv.other_user_id);
+                          }}
+                          className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 font-medium"
+                        >
+                          {expandedTasks[conv.other_user_id] ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+                          {expandedTasks[conv.other_user_id] ? 'Hide task' : 'Show task'}
+                        </button>
+                      </div>
+                    )}
+                    {conv.task_title && expandedTasks[conv.other_user_id] && (
+                      <p className="text-xs text-slate-700 font-medium mt-1 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                        {conv.task_title}
+                      </p>
+                    )}
                     <p className="text-sm text-slate-500 truncate">
                       {conv.last_message || 'No messages yet'}
                     </p>

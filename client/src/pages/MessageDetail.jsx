@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Send, ArrowLeft, Trash2, Reply, X } from 'lucide-react';
+import { Send, ArrowLeft, Trash2, Reply, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -15,6 +15,8 @@ export default function MessageDetail() {
   const [otherUser, setOtherUser] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
   const [showDeleteMenu, setShowDeleteMenu] = useState(null);
+  const [taskInfo, setTaskInfo] = useState(null);
+  const [showTaskInfo, setShowTaskInfo] = useState(true);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -24,6 +26,34 @@ export default function MessageDetail() {
     const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
   }, [userId]);
+
+  // Fetch task info from the LATEST message's negotiation_id (most recent negotiation)
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Find the last (most recent) message with a negotiation_id
+      const latestMessageWithNegotiation = messages.reduce((latest, m) => {
+        if (!m.negotiation_id) return latest;
+        if (!latest) return m;
+        return new Date(m.created_at) > new Date(latest.created_at) ? m : latest;
+      }, null);
+
+      if (latestMessageWithNegotiation) {
+        fetchTaskInfo(latestMessageWithNegotiation.negotiation_id);
+      }
+    }
+  }, [messages]);
+
+  const fetchTaskInfo = async (taskId) => {
+    try {
+      const res = await fetch(`${API}/api/tasks/${taskId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTaskInfo({ id: data.id, title: data.title });
+      }
+    } catch (err) {
+      console.error('Failed to fetch task info:', err);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -189,6 +219,24 @@ export default function MessageDetail() {
                 <p className="text-xs text-slate-500">
                   {otherUser?.email || ''}
                 </p>
+                {/* Task Info - Collapsible */}
+                {taskInfo && (
+                  <div className="mt-1 flex items-center gap-1">
+                    <button
+                      onClick={() => setShowTaskInfo(!showTaskInfo)}
+                      className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 font-medium"
+                    >
+                      {showTaskInfo ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+                      {showTaskInfo ? 'Hide task' : 'Show task'}
+                    </button>
+                  </div>
+                )}
+                {taskInfo && showTaskInfo && (
+                  <p className="text-xs text-slate-700 font-medium mt-1 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                    {taskInfo.title}
+                  </p>
+                )}
               </div>
             </div>
           </div>
