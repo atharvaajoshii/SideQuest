@@ -333,6 +333,22 @@ export default function Home() {
               </Link>
             </div>
 
+            {/* Announcement — TODO: GET /api/announcements?active=true */}
+            <div style={{ background: '#fff', border: '1px solid #E8E6E0', borderRadius: 18, padding: 18 }}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: '#1A1A2E', marginBottom: 12 }}>Announcement</div>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(108,92,231,0.07), rgba(255,110,180,0.05))',
+                border: '1px solid rgba(108,92,231,0.15)', borderRadius: 14, padding: '14px 16px',
+                display: 'flex', gap: 12, alignItems: 'flex-start',
+              }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(108,92,231,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📣</div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E', marginBottom: 4 }}>Hackathon Season is here!</div>
+                  <div style={{ fontSize: 12, color: '#6B6B85', lineHeight: 1.5 }}>Browse 40+ new tasks posted by student teams needing help this week.</div>
+                </div>
+              </div>
+            </div>
+
             {/* Quick Actions */}
             <div style={{ background: '#fff', border: '1px solid #E8E6E0', borderRadius: 18, padding: 18 }}>
               <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: '#1A1A2E', marginBottom: 14 }}>Quick Actions</div>
@@ -397,22 +413,6 @@ export default function Home() {
                   </div>
                 </Link>
               ))}
-            </div>
-
-            {/* Announcement — TODO: GET /api/announcements?active=true */}
-            <div style={{ background: '#fff', border: '1px solid #E8E6E0', borderRadius: 18, padding: 18 }}>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: '#1A1A2E', marginBottom: 12 }}>Announcement</div>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(108,92,231,0.07), rgba(255,110,180,0.05))',
-                border: '1px solid rgba(108,92,231,0.15)', borderRadius: 14, padding: '14px 16px',
-                display: 'flex', gap: 12, alignItems: 'flex-start',
-              }}>
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(108,92,231,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📣</div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E', marginBottom: 4 }}>Hackathon Season is here!</div>
-                  <div style={{ fontSize: 12, color: '#6B6B85', lineHeight: 1.5 }}>Browse 40+ new tasks posted by student teams needing help this week.</div>
-                </div>
-              </div>
             </div>
 
           </div>
