@@ -13,16 +13,23 @@ export default function AdminLayout() {
     navigate('/signin');
   };
 
-  const isActive = (path) => location.pathname === path;
+  // FIX: use startsWith so sub-routes also highlight the parent nav item
+  // Special case: /admin exactly (Dashboard) must not match /admin/users etc.
+  const isActive = (path) => {
+    if (path === '/admin') return location.pathname === '/admin';
+    return location.pathname.startsWith(path);
+  };
 
   const navLinks = [
-    { to: '/admin', label: 'Dashboard', icon: <BarChart2 size={18} /> },
-    { to: '/admin/users', label: 'Manage Users', icon: <Users size={18} /> },
-    { to: '/admin/tasks', label: 'Manage Tasks', icon: <Briefcase size={18} /> },
-    { to: '/admin/reports', label: 'Review Reports', icon: <AlertTriangle size={18} /> },
-    { to: '/admin/announcements', label: 'Announcements', icon: <Megaphone size={18} /> },
-    { to: '/admin/profile', label: 'My Profile', icon: <User size={18} /> },
-    { to: '/admin/settings', label: 'Settings', icon: <Settings size={18} /> },
+    { to: '/admin',                label: 'Dashboard',       icon: <BarChart2 size={18} /> },
+    { to: '/admin/users',          label: 'Manage Users',    icon: <Users size={18} /> },
+    { to: '/admin/tasks',          label: 'Manage Tasks',    icon: <Briefcase size={18} /> },
+    { to: '/admin/reports',        label: 'Review Reports',  icon: <AlertTriangle size={18} /> },
+    { to: '/admin/announcements',  label: 'Announcements',   icon: <Megaphone size={18} /> },
+    // FIX: /admin/stats was a registered route with a full page but no sidebar link
+    { to: '/admin/stats',          label: 'Statistics',      icon: <TrendingUp size={18} /> },
+    { to: '/admin/profile',        label: 'My Profile',      icon: <User size={18} /> },
+    { to: '/admin/settings',       label: 'Settings',        icon: <Settings size={18} /> },
   ];
 
   return (

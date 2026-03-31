@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Send, User, ArrowLeft } from 'lucide-react';
+import { Send, ArrowLeft } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -37,6 +37,7 @@ export default function MessageDetail() {
       const res = await fetch(`${API}/api/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (!res.ok) return; // FIX 1: don't try to parse HTML 404 pages
       const data = await res.json();
       setOtherUser(data);
     } catch (err) {
@@ -49,6 +50,7 @@ export default function MessageDetail() {
       const res = await fetch(`${API}/api/messages/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (!res.ok) return; // FIX 1: don't try to parse HTML 404 pages
       const data = await res.json();
       setMessages(data.messages || []);
     } catch (err) {
@@ -58,8 +60,8 @@ export default function MessageDetail() {
     }
   };
 
-  const sendMessage = async (e) => {
-    e.preventDefault();
+  // FIX 2: sendMessage no longer takes an event — the form's onSubmit handles preventDefault
+  const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
     try {
@@ -79,14 +81,15 @@ export default function MessageDetail() {
         const data = await res.json();
         setMessages(prev => [...prev, data.message]);
         setNewMessage('');
-        fetchOtherUser(); // Refresh to get updated conversations
       }
     } catch (err) {
       console.error('Failed to send message:', err);
     }
   };
 
+  // FIX 3: guard against undefined/null name
   const getInitials = (name) => {
+    if (!name) return '?';
     return name
       .split(' ')
       .map(n => n[0])
@@ -123,7 +126,7 @@ export default function MessageDetail() {
             </button>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 bg-gradient-to-br from-primary to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                {otherUser ? getInitials(otherUser.name) : '?'}
+                {getInitials(otherUser?.name)}
               </div>
               <div>
                 <h3 className="font-bold text-slate-900">
@@ -154,8 +157,8 @@ export default function MessageDetail() {
               </div>
             </div>
           ) : (
-            messages.map((msg, index) => {
-              const isOwn = msg.sender_id === user.id;
+            messages.map((msg) => {
+              const isOwn = msg.sender_id === user?.id;
               return (
                 <div
                   key={msg.id}
@@ -191,7 +194,11 @@ export default function MessageDetail() {
 
         {/* Input Area */}
         <div className="p-4 border-t border-slate-200 bg-white">
-          <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); sendMessage(); }}>
+          {/* FIX 4: form onSubmit calls sendMessage directly, no double e.preventDefault */}
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
+          >
             <input
               type="text"
               className="flex-grow px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -219,7 +226,6 @@ export default function MessageDetail() {
   );
 }
 
-// Simple MessageCircle icon component for the empty state
 function MessageCircle({ size, className }) {
   return (
     <svg

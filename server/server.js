@@ -29,6 +29,9 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/admin'));
+// FIX: these two routes were never registered — caused all 404s in Messages/Notifications
+app.use('/api/messages', require('./routes/messages'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // Health check
 app.get('/', (req, res) => {
@@ -43,9 +46,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3001;
 
-// ✅ FIX: removed '127.0.0.1' — listen on all interfaces
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
-// ✅ FIX: removed the setInterval hack

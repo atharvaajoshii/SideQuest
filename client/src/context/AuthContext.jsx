@@ -14,12 +14,24 @@ export function AuthProvider({ children }) {
       fetch(`${API}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then(r => r.json())
+        .then(r => {
+          // FIX: only logout on auth failure (401/403), not on network errors
+          if (r.status === 401 || r.status === 403) {
+            logout();
+            setLoading(false);
+            return null;
+          }
+          return r.json();
+        })
         .then(data => {
+          if (!data) return;
           if (data.user) setUser(data.user);
           else logout();
         })
-        .catch(() => logout())
+        .catch(() => {
+          // FIX: network error — keep the token, don't force logout
+          console.warn('Could not reach server on startup, keeping session.');
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -29,7 +41,6 @@ export function AuthProvider({ children }) {
   const login = (userData, tokenData) => {
     setUser(userData);
     setToken(tokenData);
-    // sessionStorage clears automatically when browser tab closes
     sessionStorage.setItem('sq_token', tokenData);
   };
 
@@ -39,7 +50,6 @@ export function AuthProvider({ children }) {
     sessionStorage.removeItem('sq_token');
   };
 
-  // Call this after editing profile to update UI instantly
   const updateUser = (updatedFields) => {
     setUser(prev => ({ ...prev, ...updatedFields }));
   };

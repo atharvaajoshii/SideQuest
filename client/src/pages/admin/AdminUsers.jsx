@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Shield, Ban, Search, CheckCircle, Loader2, Trash2 } from 'lucide-react';
+// FIX: removed unused `Link` import — user names now use useNavigate instead
+import { Shield, Ban, Search, CheckCircle, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminUsers() {
   const { token, API } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  // FIX: single search state — fetch fires on explicit submit only, clear refetches all
   const [search, setSearch] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -31,6 +35,12 @@ export default function AdminUsers() {
   };
 
   const handleSearch = () => setSearchTerm(search);
+
+  // FIX: clearing the search box and submitting now resets to all users
+  const handleClear = () => {
+    setSearch('');
+    setSearchTerm('');
+  };
 
   const toggleUserStatus = async (userId, currentStatus) => {
     try {
@@ -82,6 +92,14 @@ export default function AdminUsers() {
             >
               Search
             </button>
+            {searchTerm && (
+              <button
+                onClick={handleClear}
+                className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200 transition"
+              >
+                Clear
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -109,14 +127,18 @@ export default function AdminUsers() {
                   users.map((user) => (
                     <tr key={user.id} className="hover:bg-slate-50 transition">
                       <td className="p-4">
-                        <Link to={`/freelancer/${user.id}`} className="font-bold text-slate-900 hover:text-primary transition">
+                        {/* FIX: was using <Link> inside a table cell with flex — use a button/span instead */}
+                        <button
+                          onClick={() => navigate(`/freelancer/${user.id}`)}
+                          className="font-bold text-slate-900 hover:text-primary transition text-left"
+                        >
                           {user.name}
-                        </Link>
+                        </button>
                       </td>
                       <td className="p-4 text-slate-600">{user.email}</td>
                       <td className="p-4">
                         {user.role === 'admin' ? (
-                          <span className="flex items-center gap-1 text-primary font-bold text-xs bg-indigo-50 px-2 py-1 rounded-full w-max">
+                          <span className="inline-flex items-center gap-1 text-primary font-bold text-xs bg-indigo-50 px-2 py-1 rounded-full">
                             <Shield size={14} /> Admin
                           </span>
                         ) : (
@@ -124,24 +146,28 @@ export default function AdminUsers() {
                         )}
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-1 text-xs font-bold rounded-full flex items-center gap-1 w-max ${user.is_suspended ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        {/* FIX: was using flex on a <td> — use inline-flex on the inner span instead */}
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-full ${user.is_suspended ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                           {user.is_suspended ? <Ban size={12} /> : <CheckCircle size={12} />}
                           {user.is_suspended ? 'Suspended' : 'Active'}
                         </span>
                       </td>
-                      <td className="p-4 flex justify-center gap-3">
-                        <button
-                          onClick={() => toggleUserStatus(user.id, user.is_suspended)}
-                          className={`px-3 py-1.5 rounded-lg font-bold text-sm transition flex items-center gap-1 ${user.is_suspended ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
-                        >
-                          <Ban size={14} /> {user.is_suspended ? 'Activate' : 'Suspend'}
-                        </button>
-                        <button
-                          onClick={() => deleteUser(user.id)}
-                          className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition flex items-center gap-1"
-                        >
-                          <Trash2 size={14} /> Delete
-                        </button>
+                      <td className="p-4 text-center">
+                        {/* FIX: was using flex on a <td> — use inline-flex wrapper */}
+                        <div className="inline-flex gap-3">
+                          <button
+                            onClick={() => toggleUserStatus(user.id, user.is_suspended)}
+                            className={`px-3 py-1.5 rounded-lg font-bold text-sm transition inline-flex items-center gap-1 ${user.is_suspended ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
+                          >
+                            <Ban size={14} /> {user.is_suspended ? 'Activate' : 'Suspend'}
+                          </button>
+                          <button
+                            onClick={() => deleteUser(user.id)}
+                            className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition inline-flex items-center gap-1"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
