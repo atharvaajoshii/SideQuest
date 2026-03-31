@@ -50,6 +50,7 @@ exports.register = async (req, res) => {
 };
 
 // LOGIN
+// LOGIN
 exports.login = async (req, res) => {
   try {
     console.log("🔥 LOGIN REQUEST RECEIVED");
@@ -70,6 +71,11 @@ exports.login = async (req, res) => {
     }
 
     const user = userResult.rows[0];
+
+    // ✅ Block suspended users from logging in
+    if (user.is_suspended) {
+      return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
@@ -99,7 +105,6 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 // GET ME (restore session from token)
 exports.getMe = async (req, res) => {
   try {
