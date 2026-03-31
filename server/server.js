@@ -29,9 +29,10 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/admin'));
-// FIX: these two routes were never registered — caused all 404s in Messages/Notifications
+// FIX: these routes were never registered — caused all 404s
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/orders', require('./routes/orders'));
 
 // Health check
 app.get('/', (req, res) => {

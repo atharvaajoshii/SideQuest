@@ -13,6 +13,7 @@ import MyTasks from './pages/tasks/MyTasks';
 import UserProfile from './pages/profile/UserProfile';
 import FreelancerProfile from './pages/profile/FreelancerProfile';
 import OrderPage from './pages/orders/OrderPage';
+import OrderDetail from './pages/orders/OrderDetail';
 import Negotiation from './pages/orders/Negotiation';
 import Wallet from './pages/wallet/Wallet';
 import AdminLayout from './components/AdminLayout';
@@ -67,6 +68,7 @@ function App() {
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/freelancer/:id" element={<FreelancerProfile />} />
           <Route path="/orders" element={<OrderPage />} />
+          <Route path="/orders/:orderId" element={<OrderDetail />} />
           <Route path="/negotiate/:id" element={<Negotiation />} />
           <Route path="/wallet" element={<Wallet />} />
           <Route path="/messages" element={<Messages />} />
