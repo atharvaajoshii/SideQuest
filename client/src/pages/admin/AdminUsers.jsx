@@ -65,7 +65,7 @@ export default function AdminUsers() {
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-4 border-b border-slate-200 bg-slate-50 flex gap-4">
-            <div className="relative flex-grow max-w-md">
+            <div className="relative grow max-w-md">
               <Search className="absolute left-3 top-3 text-slate-400" size={18} />
               <input
                 type="text"

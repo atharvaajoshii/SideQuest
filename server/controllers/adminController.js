@@ -80,7 +80,7 @@ exports.getAllTasks = async (req, res) => {
              COALESCE(COUNT(r.id), 0) as report_count
       FROM tasks t
       LEFT JOIN users u ON t.poster_id = u.id
-      LEFT JOIN reports r ON t.id = r.task_id
+      LEFT JOIN reports r ON t.id = r.target_id AND r.type = 'task'
       GROUP BY t.id, u.name
       ORDER BY t.created_at DESC
     `;
@@ -91,7 +91,7 @@ exports.getAllTasks = async (req, res) => {
                COALESCE(COUNT(r.id), 0) as report_count
         FROM tasks t
         LEFT JOIN users u ON t.poster_id = u.id
-        LEFT JOIN reports r ON t.id = r.task_id
+        LEFT JOIN reports r ON t.id = r.target_id AND r.type = 'task'
         GROUP BY t.id, u.name
         HAVING COUNT(r.id) > 0
         ORDER BY report_count DESC
@@ -105,7 +105,6 @@ exports.getAllTasks = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-
 // DELETE TASK
 exports.deleteTask = async (req, res) => {
   try {
@@ -122,6 +121,7 @@ exports.deleteTask = async (req, res) => {
 exports.getReports = async (req, res) => {
   try {
     const { status } = req.query;
+    
     let query = `
       SELECT r.id, r.type, r.reason, r.status, r.created_at,
              r.target_id,
@@ -131,12 +131,14 @@ exports.getReports = async (req, res) => {
       LEFT JOIN tasks t ON r.target_id = t.id AND r.type = 'task'
       LEFT JOIN users u ON r.target_id = u.id AND r.type = 'user'
       LEFT JOIN users reporter ON r.reporter_id = reporter.id
-      ORDER BY r.created_at DESC
     `;
 
+    // ✅ WHERE must come BEFORE ORDER BY
     if (status === 'pending') {
-      query += " WHERE r.status = 'pending'";
+      query += ` WHERE r.status = 'pending'`;
     }
+
+    query += ` ORDER BY r.created_at DESC`;
 
     const reports = await pool.query(query);
     res.json(reports.rows);

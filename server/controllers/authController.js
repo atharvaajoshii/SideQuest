@@ -112,7 +112,8 @@ exports.getMe = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(result.rows[0]);
+    // ✅ FIX: wrap in { user: ... } so AuthContext can read data.user
+    res.json({ user: result.rows[0] });
   } catch (err) {
     console.error("❌ GET ME ERROR:", err);
     res.status(500).json({ error: err.message });
