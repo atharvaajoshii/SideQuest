@@ -1,16 +1,17 @@
 const pool = require('../config/db');
 
-// Get all notifications for a user
+// Get all notifications for a user (only announcements)
 exports.getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
 
+    // Only fetch announcements (type = 'announcement')
     const notifications = await pool.query(`
       SELECT * FROM notifications
-      WHERE user_id = $1
+      WHERE type = 'announcement'
       ORDER BY created_at DESC
       LIMIT 50
-    `, [userId]);
+    `, []);
 
     res.json({ notifications: notifications.rows });
   } catch (err) {

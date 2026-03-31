@@ -187,21 +187,29 @@ exports.getAnnouncements = async (req, res) => {
   }
 };
 
-// CREATE ANNOUNCEMENT
+// CREATE ANNOUNCEMENT (creates notification for all users)
 exports.createAnnouncement = async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, title } = req.body;
     const admin_id = req.user.id;
 
+    // Create announcement
     const newAnnouncement = await pool.query(
       'INSERT INTO announcements (admin_id, text) VALUES ($1, $2) RETURNING *',
       [admin_id, text]
     );
 
+    // Create notification for ALL users (type = 'announcement')
+    await pool.query(
+      `INSERT INTO notifications (user_id, title, message, type)
+       SELECT id, $1, $2, 'announcement' FROM users`,
+      [title || 'New Announcement', text]
+    );
+
     res.json(newAnnouncement.rows[0]);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: 'Server Error: ' + err.message });
   }
 };
 

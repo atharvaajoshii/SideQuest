@@ -33,6 +33,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/orders', require('./routes/orders'));
+app.use('/api/negotiations', require('./routes/negotiations'));
 
 // Health check
 app.get('/', (req, res) => {

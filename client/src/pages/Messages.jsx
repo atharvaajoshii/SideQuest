@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { MessageCircle, User, Search } from 'lucide-react';
+import { MessageCircle, User, Search, Trash2 } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -11,6 +11,7 @@ export default function Messages() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleting, setDeleting] = useState(null);
 
   useEffect(() => {
     fetchConversations();
@@ -27,6 +28,30 @@ export default function Messages() {
       console.error('Failed to fetch conversations:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const deleteConversation = async (otherUserId, userName) => {
+    if (!confirm(`Delete conversation with ${userName}? This cannot be undone.`)) return;
+
+    setDeleting(otherUserId);
+    try {
+      const res = await fetch(`${API}/api/messages/conversation/${otherUserId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        setConversations(conversations.filter(c => c.other_user_id !== otherUserId));
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Failed to delete conversation');
+      }
+    } catch (err) {
+      console.error('Failed to delete conversation:', err);
+      alert('Server error');
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -123,7 +148,7 @@ export default function Messages() {
                 <div
                   key={conv.other_user_id}
                   onClick={() => navigate(`/messages/${conv.other_user_id}`)}
-                  className="p-4 hover:bg-slate-50 cursor-pointer transition flex items-center gap-4"
+                  className="p-4 hover:bg-slate-50 cursor-pointer transition flex items-center gap-4 group"
                 >
                   {/* Avatar */}
                   <div className="flex-shrink-0">
@@ -147,14 +172,33 @@ export default function Messages() {
                     </p>
                   </div>
 
-                  {/* Unread Badge */}
-                  {parseInt(conv.unread_count) > 0 && (
-                    <div className="flex-shrink-0">
-                      <span className="inline-flex items-center justify-center w-6 h-6 bg-primary text-slate-900 text-xs font-bold rounded-full">
-                        {conv.unread_count}
-                      </span>
-                    </div>
-                  )}
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    {/* Unread Badge */}
+                    {parseInt(conv.unread_count) > 0 && (
+                      <div className="flex-shrink-0">
+                        <span className="inline-flex items-center justify-center w-6 h-6 bg-primary text-slate-900 text-xs font-bold rounded-full">
+                          {conv.unread_count}
+                        </span>
+                      </div>
+                    )}
+                    {/* Delete Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteConversation(conv.other_user_id, conv.name);
+                      }}
+                      disabled={deleting === conv.other_user_id}
+                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition opacity-0 group-hover:opacity-100"
+                      title="Delete conversation"
+                    >
+                      {deleting === conv.other_user_id ? (
+                        <span className="text-xs">...</span>
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

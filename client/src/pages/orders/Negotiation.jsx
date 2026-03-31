@@ -23,6 +23,8 @@ export default function Negotiation() {
           const data = await res.json();
           setTask(data);
           setOffer(data.price);
+          // Fetch negotiation messages from backend
+          fetchNegotiationMessages(taskId, data.poster_id);
         } else {
           navigate('/search');
         }
@@ -36,15 +38,47 @@ export default function Negotiation() {
     fetchTask();
   }, [taskId, API, navigate]);
 
+  const fetchNegotiationMessages = async (taskId, posterId) => {
+    try {
+      // Get the negotiation ID or create one
+      const res = await fetch(`${API}/api/negotiations/task/${taskId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.messages) {
+          setMessages(data.messages);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch negotiation messages:', err);
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim()) return;
 
     setSubmitting(true);
     try {
-      // Add message to local state (TODO: send to backend)
-      setMessages([...messages, { text: message, isOwn: true }]);
-      setMessage('');
+      const res = await fetch(`${API}/api/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          receiver_id: task.poster_id,
+          content: message,
+          negotiation_id: task.id, // Link to task/negotiation
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setMessages([...messages, data.message]);
+        setMessage('');
+      }
     } catch (err) {
       console.error('Failed to send message:', err);
     } finally {
@@ -125,25 +159,28 @@ export default function Negotiation() {
 
         {/* Chat Messages */}
         <div className="flex-grow p-6 overflow-y-auto space-y-4 bg-slate-50">
-          <div className="flex gap-4">
-            <div className="h-8 w-8 bg-indigo-100 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-indigo-600">
-              {task.poster_name?.charAt(0) || 'P'}
+          {messages.length === 0 ? (
+            <div className="text-center text-slate-500 py-8">
+              <p className="text-sm">No messages yet. Start the negotiation!</p>
             </div>
-            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 max-w-md">
-              Thanks for your interest! The posted price is ₹{task.price}. Let me know if you have any questions!
-            </div>
-          </div>
-
-          {messages.map((msg, idx) => (
-            <div key={idx} className={`flex gap-4 ${msg.isOwn ? 'flex-row-reverse' : ''}`}>
-              <div className="h-8 w-8 bg-slate-900 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white">
-                {user?.name?.charAt(0) || 'U'}
-              </div>
-              <div className="bg-slate-900 p-4 rounded-2xl rounded-tr-none shadow-sm text-white max-w-md">
-                {msg.text}
-              </div>
-            </div>
-          ))}
+          ) : (
+            messages.map((msg, idx) => {
+              const isOwn = msg.sender_id === user?.id;
+              return (
+                <div key={msg.id || idx} className={`flex gap-4 ${isOwn ? 'flex-row-reverse' : ''}`}>
+                  <div className={`h-8 w-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${isOwn ? 'bg-slate-900 text-white' : 'bg-indigo-100 text-indigo-600'}`}>
+                    {isOwn ? (user?.name?.charAt(0) || 'U') : (task.poster_name?.charAt(0) || 'P')}
+                  </div>
+                  <div className={`max-w-md px-4 py-3 rounded-2xl shadow-sm ${isOwn ? 'bg-slate-900 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'}`}>
+                    <p className="text-sm">{msg.content}</p>
+                    <p className={`text-xs mt-1 ${isOwn ? 'text-slate-300' : 'text-slate-500'}`}>
+                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          )}
 
           {/* System Offer Card */}
           <div className="mx-auto bg-white border-2 border-primary rounded-xl p-4 max-w-sm text-center shadow-md my-6">

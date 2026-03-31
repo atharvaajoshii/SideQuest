@@ -49,10 +49,13 @@ exports.getMessages = async (req, res) => {
     const messages = await pool.query(`
       SELECT m.*,
              sender.name AS sender_name,
-             receiver.name AS receiver_name
+             receiver.name AS receiver_name,
+             reply.content AS reply_content,
+             reply.sender_id AS reply_sender_id
       FROM messages m
       JOIN users sender ON m.sender_id = sender.id
       JOIN users receiver ON m.receiver_id = receiver.id
+      LEFT JOIN messages reply ON m.reply_to = reply.id
       WHERE (m.sender_id = $1 AND m.receiver_id = $2)
          OR (m.sender_id = $2 AND m.receiver_id = $1)
       ORDER BY m.created_at ASC
@@ -75,29 +78,20 @@ exports.getMessages = async (req, res) => {
 exports.sendMessage = async (req, res) => {
   try {
     const senderId = req.user.id;
-    const { receiver_id, content, order_id, negotiation_id } = req.body;
+    const { receiver_id, content, order_id, negotiation_id, reply_to } = req.body;
 
     if (!receiver_id || !content) {
       return res.status(400).json({ message: 'Receiver ID and content are required' });
     }
 
     const newMessage = await pool.query(`
-      INSERT INTO messages (sender_id, receiver_id, content, order_id, negotiation_id)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO messages (sender_id, receiver_id, content, order_id, negotiation_id, reply_to)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
-    `, [senderId, receiver_id, content, order_id || null, negotiation_id || null]);
+    `, [senderId, receiver_id, content, order_id || null, negotiation_id || null, reply_to || null]);
 
-    // Create a notification for the receiver
-    await pool.query(`
-      INSERT INTO notifications (user_id, title, message, type, link)
-      VALUES ($1, $2, $3, $4, $5)
-    `, [
-      receiver_id,
-      'New Message',
-      content.substring(0, 100),
-      'message',
-      `/messages/${senderId}`
-    ]);
+    // Note: No notification created for regular messages
+    // Notifications are only for admin announcements
 
     res.status(201).json({ message: newMessage.rows[0] });
   } catch (err) {
@@ -121,6 +115,55 @@ exports.markAsRead = async (req, res) => {
     res.json({ message: 'Messages marked as read' });
   } catch (err) {
     console.error('❌ MARK AS READ ERROR:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Delete a single message
+exports.deleteMessage = async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const userId = req.user.id;
+
+    // Check if user owns the message
+    const msgCheck = await pool.query(
+      'SELECT sender_id FROM messages WHERE id = $1',
+      [messageId]
+    );
+
+    if (msgCheck.rows.length === 0) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    if (msgCheck.rows[0].sender_id !== userId) {
+      return res.status(403).json({ message: 'You can only delete your own messages' });
+    }
+
+    await pool.query('DELETE FROM messages WHERE id = $1', [messageId]);
+
+    res.json({ message: 'Message deleted successfully' });
+  } catch (err) {
+    console.error('❌ DELETE MESSAGE ERROR:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Delete entire conversation with a user
+exports.deleteConversation = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const otherUserId = req.params.userId;
+
+    // Delete all messages between these users (in both directions)
+    await pool.query(`
+      DELETE FROM messages
+      WHERE (sender_id = $1 AND receiver_id = $2)
+         OR (sender_id = $2 AND receiver_id = $1)
+    `, [userId, otherUserId]);
+
+    res.json({ message: 'Conversation deleted successfully' });
+  } catch (err) {
+    console.error('❌ DELETE CONVERSATION ERROR:', err);
     res.status(500).json({ error: err.message });
   }
 };

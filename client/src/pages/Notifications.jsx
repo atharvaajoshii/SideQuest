@@ -72,12 +72,8 @@ export default function Notifications() {
 
   const getIcon = (type) => {
     switch (type) {
-      case 'message':
-        return <MessageCircle size={20} className="text-blue-500" />;
-      case 'order':
-        return <DollarSign size={20} className="text-green-500" />;
-      case 'task':
-        return <FileText size={20} className="text-purple-500" />;
+      case 'announcement':
+        return <Bell size={20} className="text-primary" />;
       case 'system':
         return <AlertCircle size={20} className="text-orange-500" />;
       default:
@@ -101,9 +97,9 @@ export default function Notifications() {
         {/* Header */}
         <div className="mb-6 flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Notifications</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Announcements</h1>
             <p className="text-sm text-slate-500 mt-1">
-              Stay updated with your orders, messages, and tasks
+              Official announcements from the admin
             </p>
           </div>
           {unreadCount > 0 && (
