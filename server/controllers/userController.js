@@ -41,15 +41,29 @@ exports.getCurrentUser = async (req, res) => {
 // UPDATE CURRENT USER
 exports.updateCurrentUser = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, email } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ message: 'Name is required' });
     }
 
+    if (!email || !email.trim()) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Check if email is already taken by another user
+    const emailCheck = await pool.query(
+      'SELECT id FROM users WHERE email = $1 AND id != $2',
+      [email.trim(), req.user.id]
+    );
+
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({ message: 'Email is already in use' });
+    }
+
     const updatedUser = await pool.query(
-      'UPDATE users SET name = $1 WHERE id = $2 RETURNING id, name, email, role, wallet_balance, created_at',
-      [name.trim(), req.user.id]
+      'UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING id, name, email, role, wallet_balance, created_at',
+      [name.trim(), email.trim(), req.user.id]
     );
 
     res.json(updatedUser.rows[0]);

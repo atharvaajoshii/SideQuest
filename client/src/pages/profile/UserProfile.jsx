@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Mail, Shield, Award, Edit3, Check, X, Loader2 } from 'lucide-react';
+import { Mail, Shield, Award, Edit3, Check, X, Loader2, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function UserProfile() {
   const { user, token, updateUser, API } = useAuth();
 
   const [editing, setEditing] = useState(false);
-  const [newName, setNewName] = useState(user?.name || '');
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -15,8 +18,16 @@ export default function UserProfile() {
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : '??';
 
-  const saveName = async () => {
-    if (!newName.trim()) return;
+  const saveProfile = async () => {
+    if (!formData.name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    if (!formData.email.trim() || !formData.email.includes('@')) {
+      setError('Valid email is required');
+      return;
+    }
+
     setSaving(true);
     setError('');
     try {
@@ -26,13 +37,16 @@ export default function UserProfile() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: newName.trim() }),
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+        }),
       });
       const data = await res.json();
       if (res.ok) {
-        updateUser({ name: data.name });
+        updateUser({ name: data.name, email: data.email });
         setEditing(false);
-        setSuccess('Name updated!');
+        setSuccess('Profile updated successfully!');
         setTimeout(() => setSuccess(''), 3000);
       } else {
         setError(data.message || 'Failed to update');
@@ -41,6 +55,10 @@ export default function UserProfile() {
       setError('Server error');
     }
     setSaving(false);
+  };
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -69,26 +87,35 @@ export default function UserProfile() {
 
             {/* Editable name */}
             {editing ? (
-              <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
-                <input
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  className="text-xl font-bold rounded-lg px-3 py-1"
-                  style={{
-                    border: '1px solid #E8E6E0',
-                    outline: 'none'
-                  }}
-                />
-                <button onClick={saveName} disabled={saving}
-                  className="p-1.5 rounded-lg"
-                  style={{ background: '#00C897', color: '#fff' }}>
-                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                </button>
-                <button onClick={() => { setEditing(false); setNewName(user?.name); }}
-                  className="p-1.5 rounded-lg"
-                  style={{ background: '#F0EEE8' }}>
-                  <X size={16} />
-                </button>
+              <div className="space-y-3 mb-3">
+                <div className="flex items-center gap-2 justify-center md:justify-start">
+                  <User size={18} style={{ color: '#6B6B85' }} />
+                  <input
+                    value={formData.name}
+                    onChange={e => handleChange('name', e.target.value)}
+                    placeholder="Your Name"
+                    className="text-lg font-bold rounded-lg px-3 py-1.5 flex-grow max-w-xs"
+                    style={{
+                      border: '1px solid #E8E6E0',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+                <div className="flex items-center gap-2 justify-center md:justify-start">
+                  <Mail size={18} style={{ color: '#6B6B85' }} />
+                  <input
+                    value={formData.email}
+                    onChange={e => handleChange('email', e.target.value)}
+                    placeholder="Email"
+                    type="email"
+                    className="text-base rounded-lg px-3 py-1.5 flex-grow max-w-xs"
+                    style={{
+                      border: '1px solid #E8E6E0',
+                      outline: 'none',
+                      color: '#6B6B85'
+                    }}
+                  />
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
@@ -98,7 +125,10 @@ export default function UserProfile() {
                 >
                   {user?.name}
                 </h1>
-                <button onClick={() => setEditing(true)}
+                <button onClick={() => {
+                  setEditing(true);
+                  setFormData({ name: user?.name || '', email: user?.email || '' });
+                }}
                   style={{ color: '#6B6B85' }}>
                   <Edit3 size={18} />
                 </button>
@@ -108,10 +138,28 @@ export default function UserProfile() {
             {success && <p style={{ color: '#00C897' }} className="text-sm mb-1">{success}</p>}
             {error && <p style={{ color: '#FF6B35' }} className="text-sm mb-1">{error}</p>}
 
-            <p className="flex items-center justify-center md:justify-start gap-2"
-              style={{ color: '#6B6B85' }}>
-              <Mail size={16} /> {user?.email}
-            </p>
+            {!editing && (
+              <p className="flex items-center justify-center md:justify-start gap-2"
+                style={{ color: '#6B6B85' }}>
+                <Mail size={16} /> {user?.email}
+              </p>
+            )}
+
+            {editing && (
+              <div className="flex items-center gap-2 justify-center md:justify-start mt-3">
+                <button onClick={saveProfile} disabled={saving}
+                  className="px-4 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2"
+                  style={{ background: '#00C897', color: '#fff' }}>
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                  Save Changes
+                </button>
+                <button onClick={() => { setEditing(false); setFormData({ name: user?.name || '', email: user?.email || '' }); }}
+                  className="px-4 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2"
+                  style={{ background: '#F0EEE8', color: '#6B6B85' }}>
+                  <X size={14} /> Cancel
+                </button>
+              </div>
+            )}
 
             <div className="flex gap-2 mt-3 justify-center md:justify-start flex-wrap">
               <span
@@ -182,9 +230,14 @@ export default function UserProfile() {
                 <span style={{ color: '#1A1A2E', fontWeight: 700 }}>{user?.email}</span>
               </div>
 
-              <div className="flex justify-between pb-2">
+              <div className="flex justify-between border-b pb-2" style={{ borderColor: '#F0EEE8' }}>
                 <span style={{ color: '#6B6B85' }}>Role</span>
                 <span style={{ color: '#1A1A2E', fontWeight: 700 }}>{user?.role}</span>
+              </div>
+
+              <div className="flex justify-between pb-2">
+                <span style={{ color: '#6B6B85' }}>Wallet Balance</span>
+                <span style={{ color: '#1A1A2E', fontWeight: 700 }}>₹{parseFloat(user?.wallet_balance || 0).toFixed(2)}</span>
               </div>
             </div>
           </div>

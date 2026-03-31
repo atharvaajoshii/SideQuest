@@ -1,19 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   PlusCircle, Search, FileText, Zap,
   CreditCard, TrendingUp, Star,
 } from 'lucide-react';
-
-// ─── MOCK DATA (replace with real API calls) ────────────────────────────────
-
-const MOCK_USER = {
-  name: 'Arjun',
-  initials: 'AK',
-  balance: 1340,
-  earned: 4820,
-  completed: 17,
-};
 
 const MOCK_TASKS = [
   {
@@ -117,15 +108,41 @@ function ProgressBar({ value, color = '#00C897' }) {
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery]   = useState('');
+  const [userStats, setUserStats] = useState({ earned: 0, completed: 0 });
   const navigate = useNavigate();
+  const { user, token, API } = useAuth();
 
-  // TODO: Replace MOCK_USER with → const { user } = useAuth()  from AuthContext
-  const user = MOCK_USER;
+  // Fetch user stats from database
+  useEffect(() => {
+    if (user && token) {
+      // Fetch completed tasks count
+      fetch(`${API}/api/tasks/completed`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          setUserStats({
+            earned: parseFloat(user.wallet_balance || 0),
+            completed: data.count || 0
+          });
+        })
+        .catch(() => {
+          setUserStats({
+            earned: parseFloat(user.wallet_balance || 0),
+            completed: 0
+          });
+        });
+    }
+  }, [user, token, API]);
 
   const filteredTasks = MOCK_TASKS.filter(task =>
     task.title.toLowerCase().includes(searchQuery.toLowerCase())
-    // TODO: add → && (activeFilter === 'All' || task.category === activeFilter)
   );
+
+  // Get user initials from real user data
+  const userInitials = user?.name
+    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : '??';
 
   return (
     <div style={{ background: '#F7F6F2', minHeight: '100vh', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
@@ -157,7 +174,7 @@ export default function Home() {
               display: 'flex', alignItems: 'center', gap: 8,
             }}>
               <div style={{ width: 20, height: 2, background: '#FFD93D', borderRadius: 2 }} />
-              Good morning, {user.name}
+              Good morning, {user?.name || 'User'}
             </div>
             <div style={{
               fontFamily: "'Syne', sans-serif", fontWeight: 800,
@@ -196,8 +213,8 @@ export default function Home() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', zIndex: 2, flexShrink: 0 }}>
             {[
-              { label: 'Total Earned',    value: `₹${user.earned.toLocaleString('en-IN')}`, change: '+₹640 this week', icon: <TrendingUp size={14} /> },
-              { label: 'Tasks Completed', value: user.completed,                             change: '3 this month',   icon: <Star size={14} /> },
+              { label: 'Total Earned',    value: `₹${userStats.earned.toLocaleString('en-IN')}`, change: '+ earnings', icon: <TrendingUp size={14} /> },
+              { label: 'Tasks Completed', value: userStats.completed,                            change: 'tasks done', icon: <Star size={14} /> },
             ].map(({ label, value, change, icon }) => (
               <div key={label} style={{
                 background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)',
@@ -317,9 +334,8 @@ export default function Home() {
             }}>
               <div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 500, marginBottom: 4 }}>Wallet Balance</div>
-                {/* TODO: swap user.balance → parseFloat(user?.wallet_balance || 0) from AuthContext */}
                 <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: '#FFD93D' }}>
-                  ₹{user.balance.toLocaleString('en-IN')}
+                  ₹{parseFloat(user?.wallet_balance || 0).toLocaleString('en-IN')}
                 </div>
               </div>
               <Link to="/wallet" style={{ textDecoration: 'none' }}>
