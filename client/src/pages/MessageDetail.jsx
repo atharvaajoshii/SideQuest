@@ -21,7 +21,6 @@ export default function MessageDetail() {
     fetchMessages();
     fetchOtherUser();
 
-    // Poll for new messages every 5 seconds
     const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
   }, [userId]);
@@ -149,10 +148,8 @@ export default function MessageDetail() {
 
   const getReplyMessage = (msg) => {
     if (!msg.reply_to) return null;
-    // Check if we have the reply in our messages array
     const reply = messages.find(m => m.id === msg.reply_to);
     if (reply) return reply;
-    // Otherwise use the reply data from the backend
     return {
       id: msg.reply_to,
       content: msg.reply_content,
@@ -217,7 +214,6 @@ export default function MessageDetail() {
           {messages.length === 0 ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center text-slate-500">
-                <MessageCircle size={48} className="mx-auto mb-3 text-slate-300" />
                 <p className="font-medium">No messages yet</p>
                 <p className="text-sm">Start the conversation!</p>
               </div>
@@ -232,53 +228,28 @@ export default function MessageDetail() {
                   key={msg.id}
                   className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''} group`}
                 >
-                  {!isOwn && (
-                    <div className="h-8 w-8 bg-gradient-to-br from-primary to-yellow-600 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
-                      {getInitials(msg.sender_name)}
-                    </div>
-                  )}
                   <div className="relative">
-                    <div
-                      className={`max-w-md px-4 py-3 rounded-2xl shadow-sm ${
-                        isOwn
-                          ? 'bg-slate-900 text-white rounded-tr-none'
-                          : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
-                      }`}
-                    >
-                      {/* Reply Preview */}
+                    <div className={`max-w-md px-4 py-3 rounded-2xl shadow-sm ${
+                      isOwn
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-white text-slate-800 border'
+                    }`}>
                       {replyMsg && (
-                        <div className={`mb-2 p-2 rounded text-xs border-l-2 ${
-                          isOwn
-                            ? 'bg-white/10 border-primary text-slate-200'
-                            : 'bg-slate-100 border-slate-400 text-slate-600'
-                        }`}>
-                          <span className="font-semibold">
-                            {replyMsg.sender_id === user?.id ? 'You' : msg.sender_name}:
-                          </span>
-                          <span className="ml-1 line-clamp-1">{replyMsg.content}</span>
+                        <div className="text-xs mb-2">
+                          <b>{replyMsg.sender_id === user?.id ? 'You' : 'User'}:</b> {replyMsg.content}
                         </div>
                       )}
-                      <p className="text-sm">{msg.content}</p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          isOwn ? 'text-slate-300' : 'text-slate-500'
-                        }`}
-                      >
-                        {formatTime(msg.created_at)}
-                      </p>
+                      <p>{msg.content}</p>
+                      <p className="text-xs mt-1">{formatTime(msg.created_at)}</p>
                     </div>
 
-                    {/* Delete Button (shown on hover) */}
                     {isOwn && (
-                      <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => setShowDeleteMenu(showDeleteMenu === msg.id ? null : msg.id)}
-                          className="p-1.5 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition"
-                          title="Delete message"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => deleteMessage(msg.id)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -290,80 +261,27 @@ export default function MessageDetail() {
 
         {/* Reply Preview */}
         {replyingTo && (
-          <div className="px-4 py-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Reply size={16} className="text-primary" />
-              <span className="text-sm text-slate-600">
-                Replying to: <span className="font-medium">{replyingTo.content.substring(0, 50)}...</span>
-              </span>
-            </div>
-            <button
-              onClick={() => setReplyingTo(null)}
-              className="p-1 hover:bg-slate-200 rounded transition"
-            >
-              <X size={16} className="text-slate-500" />
+          <div className="p-2 bg-gray-100 flex justify-between">
+            Replying to: {replyingTo.content}
+            <button onClick={() => setReplyingTo(null)}>
+              <X size={16} />
             </button>
           </div>
         )}
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-slate-200 bg-white">
-          <form
-            className="flex gap-2"
-            onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                const lastMessage = messages[messages.length - 1];
-                if (lastMessage) setReplyingTo(lastMessage);
-              }}
-              className="p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition"
-              title="Reply to last message"
-            >
-              <Reply size={20} />
-            </button>
-            <input
-              type="text"
-              className="flex-grow px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="Type a message... (Press Enter to send)"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-            />
-            <button
-              type="submit"
-              className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-primary transition flex items-center gap-2"
-            >
-              <Send size={18} />
-            </button>
-          </form>
+        {/* Input */}
+        <div className="p-4 flex gap-2 border-t">
+          <input
+            className="flex-1 border p-2 rounded"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+          />
+          <button onClick={sendMessage}>
+            <Send />
+          </button>
         </div>
 
       </div>
     </div>
-  );
-}
-
-function MessageCircle({ size, className }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
   );
 }

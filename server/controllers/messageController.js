@@ -1,11 +1,10 @@
 const pool = require('../config/db');
 
-// Get all conversations for a user (list of users they've messaged with)
+// ================= GET CONVERSATIONS =================
 exports.getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get all users who have exchanged messages with the current user
     const conversations = await pool.query(`
       SELECT DISTINCT
         CASE
@@ -40,7 +39,7 @@ exports.getConversations = async (req, res) => {
   }
 };
 
-// Get messages between current user and another user
+// ================= GET MESSAGES =================
 exports.getMessages = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -51,17 +50,19 @@ exports.getMessages = async (req, res) => {
              sender.name AS sender_name,
              receiver.name AS receiver_name,
              reply.content AS reply_content,
-             reply.sender_id AS reply_sender_id
+             reply.sender_id AS reply_sender_id,
+             replySender.name AS reply_sender_name   -- ✅ FIXED
       FROM messages m
       JOIN users sender ON m.sender_id = sender.id
       JOIN users receiver ON m.receiver_id = receiver.id
       LEFT JOIN messages reply ON m.reply_to = reply.id
+      LEFT JOIN users replySender ON reply.sender_id = replySender.id
       WHERE (m.sender_id = $1 AND m.receiver_id = $2)
          OR (m.sender_id = $2 AND m.receiver_id = $1)
       ORDER BY m.created_at ASC
     `, [userId, otherUserId]);
 
-    // Mark received messages as read
+    // mark as read
     await pool.query(`
       UPDATE messages SET is_read = TRUE
       WHERE sender_id = $1 AND receiver_id = $2 AND is_read = FALSE
@@ -74,7 +75,7 @@ exports.getMessages = async (req, res) => {
   }
 };
 
-// Send a message
+// ================= SEND MESSAGE =================
 exports.sendMessage = async (req, res) => {
   try {
     const senderId = req.user.id;
@@ -88,10 +89,14 @@ exports.sendMessage = async (req, res) => {
       INSERT INTO messages (sender_id, receiver_id, content, order_id, negotiation_id, reply_to)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
-    `, [senderId, receiver_id, content, order_id || null, negotiation_id || null, reply_to || null]);
-
-    // Note: No notification created for regular messages
-    // Notifications are only for admin announcements
+    `, [
+      senderId,
+      receiver_id,
+      content,
+      order_id || null,
+      negotiation_id || null,
+      reply_to || null
+    ]);
 
     res.status(201).json({ message: newMessage.rows[0] });
   } catch (err) {
@@ -100,7 +105,7 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
-// Mark messages as read
+// ================= MARK AS READ =================
 exports.markAsRead = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -119,13 +124,12 @@ exports.markAsRead = async (req, res) => {
   }
 };
 
-// Delete a single message
+// ================= DELETE MESSAGE =================
 exports.deleteMessage = async (req, res) => {
   try {
     const messageId = req.params.id;
-    const userId = req.user.id;
+    const userId = parseInt(req.user.id); // ✅ FIX
 
-    // Check if user owns the message
     const msgCheck = await pool.query(
       'SELECT sender_id FROM messages WHERE id = $1',
       [messageId]
@@ -135,7 +139,7 @@ exports.deleteMessage = async (req, res) => {
       return res.status(404).json({ message: 'Message not found' });
     }
 
-    if (msgCheck.rows[0].sender_id !== userId) {
+    if (parseInt(msgCheck.rows[0].sender_id) !== userId) { // ✅ FIX
       return res.status(403).json({ message: 'You can only delete your own messages' });
     }
 
@@ -148,13 +152,12 @@ exports.deleteMessage = async (req, res) => {
   }
 };
 
-// Delete entire conversation with a user
+// ================= DELETE CONVERSATION =================
 exports.deleteConversation = async (req, res) => {
   try {
     const userId = req.user.id;
     const otherUserId = req.params.userId;
 
-    // Delete all messages between these users (in both directions)
     await pool.query(`
       DELETE FROM messages
       WHERE (sender_id = $1 AND receiver_id = $2)
