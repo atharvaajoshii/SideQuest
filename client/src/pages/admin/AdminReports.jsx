@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, AlertTriangle, CheckCircle, Ban, Eye, Loader2, Trash2 } from 'lucide-react';
+// FIX: removed unused `Link` import
+import { AlertTriangle, CheckCircle, Ban, Eye, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -32,7 +33,8 @@ export default function AdminReports() {
 
   const dismissReport = async (reportId) => {
     try {
-      const res = await fetch(`${API}/api/admin/reports/${reportId}/dismiss`, {
+      // FIX: was calling /dismiss which doesn't exist — the registered route is /resolve
+      const res = await fetch(`${API}/api/admin/reports/${reportId}/resolve`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });

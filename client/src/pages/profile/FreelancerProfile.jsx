@@ -1,7 +1,15 @@
 import React from 'react';
 import { Star, MessageSquare, Briefcase, MapPin } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 
 export default function FreelancerProfile() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const handleMessageClick = () => {
+    navigate(`/messages/${id}`);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -19,7 +27,7 @@ export default function FreelancerProfile() {
               <Star fill="currentColor" size={20} /> 4.9 <span className="text-slate-400 text-sm font-normal">(12 reviews)</span>
             </div>
 
-            <button className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold shadow-md hover:bg-primary transition flex justify-center items-center gap-2">
+            <button onClick={handleMessageClick} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold shadow-md hover:bg-primary transition flex justify-center items-center gap-2">
               <MessageSquare size={18} /> Message Alex
             </button>
           </div>

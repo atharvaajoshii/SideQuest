@@ -1,12 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Search, PlusCircle, LogOut, Wallet, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const API = import.meta.env.VITE_API_URL;
+
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
+  // FIX: real unread notification count instead of hardcoded dot
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+    const fetchUnread = () => {
+      fetch(`${API}/api/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) setUnreadCount(data.count || 0);
+        })
+        .catch(() => {});
+    };
+    fetchUnread();
+    // Poll every 30 seconds
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [token]);
 
   const handleLogout = () => {
     logout();
@@ -17,16 +39,18 @@ export default function Layout() {
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : '??';
 
-  const isActive = (path) =>
-    path === '/home'
-      ? location.pathname === '/home'
-      : location.pathname.startsWith(path);
+  const isActive = (path) => {
+    // FIX: /tasks/mine must be exact so /tasks/post and /tasks/123 don't highlight it
+    if (path === '/tasks/mine') return location.pathname === '/tasks/mine';
+    if (path === '/home') return location.pathname === '/home';
+    return location.pathname.startsWith(path);
+  };
 
   const navLinks = [
-    { to: '/home',        label: 'Home',         icon: <Home size={15} /> },
-    { to: '/search',      label: 'Browse',        icon: <Search size={15} /> },
-    { to: '/tasks/mine',  label: 'My Tasks',      icon: null },
-    { to: '/messages',    label: 'Messages',      icon: null },
+    { to: '/home',       label: 'Home',      icon: <Home size={15} /> },
+    { to: '/search',     label: 'Browse',    icon: <Search size={15} /> },
+    { to: '/tasks/mine', label: 'My Tasks',  icon: null },
+    { to: '/messages',   label: 'Messages',  icon: null },
   ];
 
   return (
@@ -141,18 +165,21 @@ export default function Layout() {
                 color: 'rgba(255,255,255,0.65)',
                 cursor: 'pointer',
                 transition: 'background 0.15s',
+                position: 'relative',
               }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
               >
                 <Bell size={15} />
-                {/* Notification dot — wire to real unread count */}
-                <div style={{
-                  width: 7, height: 7, borderRadius: '50%',
-                  background: '#FF6B35',
-                  position: 'absolute', top: 6, right: 6,
-                  border: '1.5px solid #1A1A2E',
-                }} />
+                {/* FIX: only show dot when there are real unread notifications */}
+                {unreadCount > 0 && (
+                  <div style={{
+                    width: 7, height: 7, borderRadius: '50%',
+                    background: '#FF6B35',
+                    position: 'absolute', top: 6, right: 6,
+                    border: '1.5px solid #1A1A2E',
+                  }} />
+                )}
               </div>
             </Link>
 
