@@ -33,6 +33,7 @@ export default function Search() {
         if (selectedCategory !== "All") params.append('category', selectedCategory);
         if (searchTerm) params.append('search', searchTerm);
 
+        console.log('Fetching tasks from:', `${API}/api/tasks?${params}`);
         const res = await fetch(`${API}/api/tasks?${params}`);
 
         let data;
@@ -42,6 +43,8 @@ export default function Search() {
           data = [];
         }
 
+        console.log('Browse tasks response:', data);
+
         if (res.ok) {
           setTasks(data);
         } else {
@@ -49,6 +52,7 @@ export default function Search() {
         }
 
       } catch (err) {
+        console.error('Failed to fetch tasks:', err);
         setError('Server error. Is backend running?');
       }
 

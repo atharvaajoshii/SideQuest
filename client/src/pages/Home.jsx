@@ -76,12 +76,22 @@ export default function Home() {
   // Fetch recommended tasks
   useEffect(() => {
     if (user && token) {
+      console.log('Fetching recommended tasks, API:', API, 'User:', user);
       fetch(`${API}/api/tasks/feed/recommended`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then(res => res.json())
-        .then(data => setRecommendedTasks(data))
-        .catch(() => setRecommendedTasks([]));
+        .then(res => {
+          console.log('Recommended tasks response status:', res.status);
+          return res.json();
+        })
+        .then(data => {
+          console.log('Recommended tasks data:', data);
+          setRecommendedTasks(data);
+        })
+        .catch(err => {
+          console.error('Failed to fetch recommended tasks:', err);
+          setRecommendedTasks([]);
+        });
 
       // Fetch active orders (tasks I'm working on)
       fetch(`${API}/api/tasks/my-work`, {

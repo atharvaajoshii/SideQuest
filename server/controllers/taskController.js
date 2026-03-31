@@ -30,7 +30,7 @@ exports.getTasks = async (req, res) => {
       SELECT t.*, u.name as poster_name
       FROM tasks t
       JOIN users u ON t.poster_id = u.id
-      WHERE t.is_visible = true AND t.status = 'open'
+      WHERE t.is_visible = true AND LOWER(t.status) = 'open'
     `;
 
     const values = [];
@@ -269,7 +269,7 @@ exports.getRecommendedTasks = async (req, res) => {
        FROM tasks t
        JOIN users u ON t.poster_id = u.id
        WHERE t.is_visible = true
-         AND t.status = 'open'
+         AND LOWER(t.status) = 'open'
          AND t.poster_id != $1
        ORDER BY t.created_at DESC`,
       [userId]
