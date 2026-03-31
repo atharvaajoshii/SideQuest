@@ -1,59 +1,168 @@
-import React, { useState } from 'react';
-import { Link, Send, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { Send, User, Loader2 } from 'lucide-react';
 
 export default function Negotiation() {
+  const { id: taskId } = useParams();
+  const navigate = useNavigate();
+  const { user, token, API } = useAuth();
+
+  const [task, setTask] = useState(null);
+  const [offer, setOffer] = useState('');
+  const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchTask = async () => {
+      try {
+        const res = await fetch(`${API}/api/tasks/${taskId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setTask(data);
+          setOffer(data.price);
+        } else {
+          navigate('/search');
+        }
+      } catch (err) {
+        console.error('Failed to fetch task:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTask();
+  }, [taskId, API, navigate]);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+
+    setSubmitting(true);
+    try {
+      // Add message to local state (TODO: send to backend)
+      setMessages([...messages, { text: message, isOwn: true }]);
+      setMessage('');
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAcceptOffer = async () => {
+    if (!offer || offer <= 0) {
+      alert('Please enter a valid offer amount');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          freelancer_id: user.id,
+          task_id: parseInt(taskId),
+          agreed_price: parseFloat(offer),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert('Offer accepted! Order created.');
+        navigate(`/orders/${data.order.id}`);
+      } else {
+        alert(data.message || 'Failed to create order');
+      }
+    } catch (err) {
+      console.error('Failed to accept offer:', err);
+      alert('Server error. Is backend running?');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading || !task) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-slate-500 font-medium">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto h-[80vh] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        
+
         {/* Chat Header */}
         <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <Link to="/freelancer/456" className="flex items-center gap-3 group">
-            <div className="h-10 w-10 bg-indigo-100 text-primary rounded-full flex items-center justify-center font-bold group-hover:bg-primary group-hover:text-white transition">
+          <Link to={`/freelancer/${task.poster_id}`} className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-white">
               <User size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 group-hover:text-primary transition">Alex (Freelancer)</h3>
-              <p className="text-xs text-slate-500">Task: Debug React Assignment</p>
+              <h3 className="font-bold text-slate-900">{task.poster_name || 'Poster'}</h3>
+              <p className="text-xs text-slate-500">Task: {task.title}</p>
             </div>
           </Link>
           <div className="text-right">
-            <span className="text-sm text-slate-500 block">Current Offer</span>
-            <span className="text-xl font-extrabold text-secondary">₹350</span>
+            <span className="text-sm text-slate-500 block">Your Offer</span>
+            <input
+              type="number"
+              value={offer}
+              onChange={(e) => setOffer(e.target.value)}
+              className="text-xl font-extrabold text-secondary w-24 text-right bg-transparent border-b border-slate-300 focus:outline-none focus:border-primary"
+            />
           </div>
         </div>
 
         {/* Chat Messages */}
         <div className="flex-grow p-6 overflow-y-auto space-y-4 bg-slate-50">
           <div className="flex gap-4">
-            <div className="h-8 w-8 bg-indigo-100 rounded-full flex-shrink-0"></div>
+            <div className="h-8 w-8 bg-indigo-100 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-indigo-600">
+              {task.poster_name?.charAt(0) || 'P'}
+            </div>
             <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 max-w-md">
-              Hi! I saw your post. I can fix the infinite loop in your React code tonight, but since it's urgent, would you be willing to do ₹350?
+              Thanks for your interest! The posted price is ₹{task.price}. Let me know if you have any questions!
             </div>
           </div>
-          
-          <div className="flex gap-4 flex-row-reverse">
-            <div className="bg-primary p-4 rounded-2xl rounded-tr-none shadow-sm text-white max-w-md">
-              Yeah, 350 works for me if you can get it done in the next 2 hours!
+
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex gap-4 ${msg.isOwn ? 'flex-row-reverse' : ''}`}>
+              <div className="h-8 w-8 bg-slate-900 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white">
+                {user?.name?.charAt(0) || 'U'}
+              </div>
+              <div className="bg-slate-900 p-4 rounded-2xl rounded-tr-none shadow-sm text-white max-w-md">
+                {msg.text}
+              </div>
             </div>
-          </div>
+          ))}
 
           {/* System Offer Card */}
           <div className="mx-auto bg-white border-2 border-primary rounded-xl p-4 max-w-sm text-center shadow-md my-6">
             <span className="text-xs font-bold text-primary uppercase tracking-wider">Official Offer</span>
-            <h2 className="text-3xl font-extrabold text-slate-900 my-2">₹350</h2>
-            <p className="text-sm text-slate-500 mb-4">Alex has offered to complete the task for this amount.</p>
-            <button className="w-full bg-secondary text-white py-2 rounded-lg font-bold hover:bg-green-600 transition">
-              Accept Offer & Start Order
+            <h2 className="text-3xl font-extrabold text-slate-900 my-2">₹{offer}</h2>
+            <p className="text-sm text-slate-500 mb-4">You're offering to complete the task for this amount.</p>
+            <button
+              onClick={handleAcceptOffer}
+              disabled={submitting}
+              className="w-full bg-secondary text-white py-2 rounded-lg font-bold hover:bg-green-600 transition disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {submitting ? <Loader2 size={18} className="animate-spin" /> : 'Accept Offer & Start Order'}
             </button>
           </div>
         </div>
 
         {/* Input Area */}
         <div className="p-4 border-t border-slate-200 bg-white">
-          <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); setMessage(''); }}>
+          <form className="flex gap-2" onSubmit={handleSendMessage}>
             <input
               type="text"
               className="flex-grow px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
@@ -61,7 +170,11 @@ export default function Negotiation() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
-            <button type="submit" className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-primary transition flex items-center gap-2">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-primary transition flex items-center gap-2 disabled:opacity-60"
+            >
               <Send size={18} />
             </button>
           </form>

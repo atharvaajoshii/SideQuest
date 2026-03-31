@@ -111,7 +111,7 @@ export default function Messages() {
               {!searchTerm && (
                 <button
                   onClick={() => navigate('/search')}
-                  className="px-6 py-2 bg-primary text-slate-900 rounded-lg font-semibold hover:bg-yellow-400 transition"
+                  className="px-6 py-2 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 transition"
                 >
                   Browse Tasks
                 </button>

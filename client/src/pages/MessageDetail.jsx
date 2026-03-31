@@ -172,14 +172,14 @@ export default function MessageDetail() {
                   <div
                     className={`max-w-md px-4 py-3 rounded-2xl shadow-sm ${
                       isOwn
-                        ? 'bg-primary text-white rounded-tr-none'
-                        : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                        ? 'bg-slate-900 text-white rounded-tr-none'
+                        : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
                     }`}
                   >
                     <p className="text-sm">{msg.content}</p>
                     <p
                       className={`text-xs mt-1 ${
-                        isOwn ? 'text-yellow-100' : 'text-slate-400'
+                        isOwn ? 'text-slate-300' : 'text-slate-500'
                       }`}
                     >
                       {formatTime(msg.created_at)}

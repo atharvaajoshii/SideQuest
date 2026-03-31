@@ -6,12 +6,15 @@ exports.getOrderById = async (req, res) => {
     const { orderId } = req.params;
     const userId = req.user.id;
 
-    // Fetch order with task details
+    // Fetch order with task details and user info
     const orderResult = await pool.query(
-      `SELECT o.*, t.title as task_title, t.description as task_description
+      `SELECT o.*, t.title as task_title, t.description as task_description,
+        uc.name as client_name, uf.name as freelancer_name
        FROM orders o
        LEFT JOIN tasks t ON o.task_id = t.id
-       WHERE o.id = $1 AND (o.client_id = $2 OR o.freelancer_id = $2)`,
+       LEFT JOIN users uc ON o.poster_id = uc.id
+       LEFT JOIN users uf ON o.freelancer_id = uf.id
+       WHERE o.id = $1 AND (o.poster_id = $2 OR o.freelancer_id = $2)`,
       [orderId, userId]
     );
 
@@ -32,9 +35,9 @@ exports.markOrderCompleted = async (req, res) => {
     const { orderId } = req.params;
     const userId = req.user.id;
 
-    // Verify user is the client
+    // Verify user is the client (poster)
     const orderCheck = await pool.query(
-      'SELECT * FROM orders WHERE id = $1 AND client_id = $2',
+      'SELECT * FROM orders WHERE id = $1 AND poster_id = $2',
       [orderId, userId]
     );
 
@@ -61,10 +64,13 @@ exports.getUserOrders = async (req, res) => {
     const userId = req.user.id;
 
     const orders = await pool.query(
-      `SELECT o.*, t.title as task_title
+      `SELECT o.*, t.title as task_title,
+        uc.name as client_name, uf.name as freelancer_name
        FROM orders o
        LEFT JOIN tasks t ON o.task_id = t.id
-       WHERE o.client_id = $1 OR o.freelancer_id = $1
+       LEFT JOIN users uc ON o.poster_id = uc.id
+       LEFT JOIN users uf ON o.freelancer_id = uf.id
+       WHERE o.poster_id = $1 OR o.freelancer_id = $1
        ORDER BY o.created_at DESC`,
       [userId]
     );
@@ -80,13 +86,13 @@ exports.getUserOrders = async (req, res) => {
 exports.createOrder = async (req, res) => {
   try {
     const { freelancer_id, task_id, agreed_price } = req.body;
-    const client_id = req.user.id;
+    const poster_id = req.user.id;
 
     const newOrder = await pool.query(
-      `INSERT INTO orders (client_id, freelancer_id, task_id, agreed_price, status, created_at, updated_at)
+      `INSERT INTO orders (poster_id, freelancer_id, task_id, agreed_price, status, created_at, updated_at)
        VALUES ($1, $2, $3, $4, 'pending', NOW(), NOW())
        RETURNING *`,
-      [client_id, freelancer_id, task_id, agreed_price]
+      [poster_id, freelancer_id, task_id, agreed_price]
     );
 
     res.status(201).json({ order: newOrder.rows[0], message: 'Order created successfully' });

@@ -43,9 +43,9 @@ export default function FreelancerProfile() {
               Hi! I'm a 3rd-year CS major. I specialize in debugging React applications, writing Python scripts, and I'm also pretty good at UI/Design. I deliver tasks quickly and communicate often!
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-indigo-50 text-primary rounded-full text-sm font-bold">React</span>
-              <span className="px-3 py-1 bg-indigo-50 text-primary rounded-full text-sm font-bold">Python</span>
-              <span className="px-3 py-1 bg-indigo-50 text-primary rounded-full text-sm font-bold">Graphic Design</span>
+              <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-sm font-bold">React</span>
+              <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-sm font-bold">Python</span>
+              <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-sm font-bold">Graphic Design</span>
             </div>
           </div>
 

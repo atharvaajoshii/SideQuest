@@ -6,60 +6,19 @@ import {
   CreditCard, TrendingUp, Star,
 } from 'lucide-react';
 
-const MOCK_TASKS = [
-  {
-    id: 1,
-    title: 'Design a landing page for our student startup',
-    description: 'Need a clean, modern landing page in Figma. Include hero, features, pricing, and CTA sections. Brand assets provided.',
-    budget: 1200,
-    deadline: '3 days',
-    applicants: 4,
-    skills: ['Figma', 'UI/UX'],
-    poster: { name: 'Riya S.', initials: 'RS', postedAt: '2h ago' },
-    accent: '#FF6B35',
-  },
-  {
-    id: 2,
-    title: 'Build a REST API for a notes app (Node + Express)',
-    description: 'Need CRUD endpoints for notes with JWT auth. PostgreSQL DB. Clean code with comments. Should take 1–2 days max.',
-    budget: 800,
-    deadline: '2 days',
-    applicants: 7,
-    skills: ['Node.js', 'PostgreSQL'],
-    poster: { name: 'Mihail K.', initials: 'MK', postedAt: '5h ago' },
-    accent: '#6C5CE7',
-  },
-  {
-    id: 3,
-    title: 'Write 5 blog posts on productivity for students',
-    description: 'SEO-friendly articles, 800–1000 words each. Topics provided. Looking for clear, engaging writing with good grammar.',
-    budget: 600,
-    deadline: '5 days',
-    applicants: 2,
-    skills: ['Writing', 'SEO'],
-    poster: { name: 'Ananya P.', initials: 'AP', postedAt: '1d ago' },
-    accent: '#00C897',
-  },
-  {
-    id: 4,
-    title: 'Edit a 10-min YouTube video with captions & B-roll',
-    description: 'Footage provided (raw MP4). Need color grading, captions, transitions, and background music. Premiere or DaVinci ok.',
-    budget: 950,
-    deadline: '4 days',
-    applicants: 1,
-    skills: ['Video Edit', 'Premiere'],
-    poster: { name: 'Vihaan T.', initials: 'VT', postedAt: '3h ago' },
-    accent: '#FF6EB4',
-  },
-];
+const ACCENT_COLORS = ['#FF6B35', '#6C5CE7', '#00C897', '#FF6EB4', '#FD79A8', '#A29BFE'];
 
-const MOCK_ORDERS = [
-  { id: 1, title: 'Logo design for Hackathon',  role: 'freelancer', status: 'active',  progress: 60, dueIn: '2d',  amount: 700 },
-  { id: 2, title: 'Python data scraper script', role: 'client',     status: 'review',  progress: 90, dueIn: null,  amount: 500 },
-  { id: 3, title: 'Resume review & formatting', role: 'freelancer', status: 'pending', progress: 10, dueIn: '5d',  amount: 300 },
-];
+const CATEGORIES = ['All', 'Design', 'Development', 'Writing', 'Video', 'Tutoring', 'Other'];
 
-const FILTERS = ['All', 'Design', 'Dev', 'Writing', 'Video', 'Research', 'Marketing'];
+const getCategorySkills = (category) => {
+  const map = {
+    'Design': ['Figma', 'UI/UX'],
+    'Development': ['Node.js', 'React'],
+    'Writing': ['Content', 'SEO'],
+    'Video': ['Premiere', 'Editing'],
+  };
+  return map[category] || ['General', 'Task'];
+};
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
@@ -109,35 +68,48 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery]   = useState('');
   const [userStats, setUserStats] = useState({ earned: 0, completed: 0 });
+  const [recommendedTasks, setRecommendedTasks] = useState([]);
+  const [activeOrders, setActiveOrders] = useState([]);
   const navigate = useNavigate();
   const { user, token, API } = useAuth();
+
+  // Fetch recommended tasks
+  useEffect(() => {
+    if (user && token) {
+      fetch(`${API}/api/tasks/feed/recommended`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => setRecommendedTasks(data))
+        .catch(() => setRecommendedTasks([]));
+
+      // Fetch active orders (tasks I'm working on)
+      fetch(`${API}/api/tasks/my-work`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => setActiveOrders(data))
+        .catch(() => setActiveOrders([]));
+    }
+  }, [user, token, API]);
 
   // Fetch user stats from database
   useEffect(() => {
     if (user && token) {
-      // Fetch completed tasks count
-      fetch(`${API}/api/tasks/completed`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => res.json())
-        .then(data => {
-          setUserStats({
-            earned: parseFloat(user.wallet_balance || 0),
-            completed: data.count || 0
-          });
-        })
-        .catch(() => {
-          setUserStats({
-            earned: parseFloat(user.wallet_balance || 0),
-            completed: 0
-          });
-        });
+      setUserStats({
+        earned: parseFloat(user.wallet_balance || 0),
+        completed: 0
+      });
     }
-  }, [user, token, API]);
+  }, [user, token]);
 
-  const filteredTasks = MOCK_TASKS.filter(task =>
-    task.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter tasks by search and category
+  const filteredTasks = recommendedTasks.filter(task => {
+    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          task.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = activeFilter === 'All' || task.category === activeFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   // Get user initials from real user data
   const userInitials = user?.name
@@ -254,13 +226,13 @@ export default function Home() {
             </div>
 
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-              {FILTERS.map(f => (
+              {CATEGORIES.map(f => (
                 <button key={f} onClick={() => setActiveFilter(f)} style={{
-                  fontSize: 13, fontWeight: 500, padding: '6px 16px', borderRadius: 100, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, padding: '6px 16px', borderRadius: 100, cursor: 'pointer',
                   border: '1px solid', transition: 'all 0.15s',
-                  borderColor: activeFilter === f ? '#1A1A2E' : '#E8E6E0',
+                  borderColor: activeFilter === f ? '#1A1A2E' : '#D1D5DB',
                   background:  activeFilter === f ? '#1A1A2E' : '#fff',
-                  color:       activeFilter === f ? '#FFD93D' : '#6B6B85',
+                  color:       activeFilter === f ? '#FFD93D' : '#374151',
                 }}>
                   {f}
                 </button>
@@ -272,56 +244,63 @@ export default function Home() {
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF6B35', flexShrink: 0 }} />
                 Recommended for You
               </div>
-              <Link to="/search" style={{ textDecoration: 'none' }}>
-                <button style={{ fontSize: 13, fontWeight: 500, color: '#6C5CE7', padding: '5px 12px', borderRadius: 100, background: 'rgba(108,92,231,0.08)', border: 'none', cursor: 'pointer' }}>
+              <Link
+                to={`/search${searchQuery ? `?search=${encodeURIComponent(searchQuery)}&category=${activeFilter !== 'All' ? activeFilter : ''}` : ''}`}
+                style={{ textDecoration: 'none' }}
+              >
+                <button style={{ fontSize: 13, fontWeight: 600, color: '#5B21B6', padding: '5px 12px', borderRadius: 100, background: '#DDD6FE', border: 'none', cursor: 'pointer' }}>
                   See all →
                 </button>
               </Link>
             </div>
 
-            {/* TODO: replace MOCK_TASKS with GET /api/tasks?recommended=true */}
-            {filteredTasks.map(task => (
-              <div
-                key={task.id}
-                onClick={() => navigate(`/tasks/${task.id}`)}
-                style={{
-                  background: '#fff', border: '1px solid #E8E6E0', borderRadius: 16,
-                  padding: '18px 20px', marginBottom: 12, cursor: 'pointer',
-                  transition: 'all 0.18s', position: 'relative', overflow: 'hidden',
-                  display: 'flex', flexDirection: 'column', gap: 10,
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.07)'; e.currentTarget.style.borderColor = '#ccc'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#E8E6E0'; }}
-              >
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: task.accent }} />
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, color: '#1A1A2E', lineHeight: 1.3 }}>{task.title}</div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 16, color: '#1A1A2E', flexShrink: 0 }}>
-                    <span style={{ fontSize: 11, fontWeight: 400, color: '#6B6B85' }}>₹</span>{task.budget.toLocaleString('en-IN')}
+            {filteredTasks.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-slate-500">No tasks found. Check back later!</p>
+              </div>
+            ) : (
+              filteredTasks.map((task, index) => (
+                <div
+                  key={task.id}
+                  onClick={() => navigate(`/tasks/${task.id}`)}
+                  style={{
+                    background: '#fff', border: '1px solid #E8E6E0', borderRadius: 16,
+                    padding: '18px 20px', marginBottom: 12, cursor: 'pointer',
+                    transition: 'all 0.18s', position: 'relative', overflow: 'hidden',
+                    display: 'flex', flexDirection: 'column', gap: 10,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.07)'; e.currentTarget.style.borderColor = '#ccc'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#E8E6E0'; }}
+                >
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ACCENT_COLORS[index % ACCENT_COLORS.length] }} />
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, color: '#1A1A2E', lineHeight: 1.3 }}>{task.title}</div>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 16, color: '#1A1A2E', flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, fontWeight: 400, color: '#6B6B85' }}>₹</span>{task.price}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#4B5563', lineHeight: 1.5 }}>{task.description}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    {getCategorySkills(task.category).map(s => (
+                      <span key={s} style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100, background: '#DDD6FE', color: '#5B21B6' }}>{s}</span>
+                    ))}
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100, background: '#FED7AA', color: '#C2410C' }}>📁 {task.category || 'General'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #E5E7EB' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#4B5563', fontWeight: 500 }}>
+                      <Avatar initials={task.poster_name?.charAt(0) || '?'} bg={ACCENT_COLORS[index % ACCENT_COLORS.length]} size={22} />
+                      <span>Posted by {task.poster_name || 'Anonymous'}</span>
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); navigate(`/tasks/${task.id}`); }}
+                      style={{ background: '#1A1A2E', color: '#fff', border: 'none', borderRadius: 100, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      View Details
+                    </button>
                   </div>
                 </div>
-                <div style={{ fontSize: 13, color: '#6B6B85', lineHeight: 1.5 }}>{task.description}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  {task.skills.map(s => (
-                    <span key={s} style={{ fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 100, background: 'rgba(108,92,231,0.09)', color: '#5a4bc4' }}>{s}</span>
-                  ))}
-                  <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 100, background: 'rgba(255,107,53,0.09)', color: '#c95520' }}>⏱ {task.deadline}</span>
-                  <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 100, background: 'rgba(0,200,151,0.09)', color: '#008a66' }}>🙋 {task.applicants} applicants</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #F0EEE8' }}>
-                  <a href={`/freelancer/${task.poster.id || 1}`} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#6B6B85', textDecoration: 'none' }} className="hover:text-primary transition">
-                    <Avatar initials={task.poster.initials} bg={task.accent} size={22} />
-                    <span className="hover:underline">Posted by {task.poster.name}</span> · {task.poster.postedAt}
-                  </a>
-                  <button
-                    onClick={e => { e.stopPropagation(); navigate(`/tasks/${task.id}`); }}
-                    style={{ background: '#1A1A2E', color: '#fff', border: 'none', borderRadius: 100, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    Apply Now
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* ── RIGHT SIDEBAR ─────────────────────────────────────────── */}
@@ -360,7 +339,7 @@ export default function Home() {
                 <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(108,92,231,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📣</div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E', marginBottom: 4 }}>Hackathon Season is here!</div>
-                  <div style={{ fontSize: 12, color: '#6B6B85', lineHeight: 1.5 }}>Browse 40+ new tasks posted by student teams needing help this week.</div>
+                  <div style={{ fontSize: 12, color: '#4B5563', lineHeight: 1.5 }}>Browse 40+ new tasks posted by student teams needing help this week.</div>
                 </div>
               </div>
             </div>
@@ -398,37 +377,58 @@ export default function Home() {
                   Active Orders
                 </span>
                 <Link to="/orders" style={{ textDecoration: 'none' }}>
-                  <button style={{ fontSize: 11, fontWeight: 500, color: '#6C5CE7', padding: '3px 10px', borderRadius: 100, background: 'rgba(108,92,231,0.08)', border: 'none', cursor: 'pointer' }}>
+                  <button style={{ fontSize: 11, fontWeight: 600, color: '#5B21B6', padding: '3px 10px', borderRadius: 100, background: '#DDD6FE', border: 'none', cursor: 'pointer' }}>
                     View all
                   </button>
                 </Link>
               </div>
-              {/* TODO: replace MOCK_ORDERS with GET /api/orders?status=active */}
-              {MOCK_ORDERS.map(order => (
-                <Link key={order.id} to={`/orders/${order.id}`} style={{ textDecoration: 'none' }}>
-                  <div
-                    style={{ background: '#fff', border: '1px solid #E8E6E0', borderRadius: 14, padding: '14px 16px', marginBottom: 10, cursor: 'pointer', transition: 'all 0.18s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#E8E6E0'; e.currentTarget.style.boxShadow = 'none'; }}
+              {activeOrders.length === 0 ? (
+                <p style={{ fontSize: 12, color: '#6B6B85', textAlign: 'center', padding: '20px 0' }}>
+                  No active orders yet.
+                </p>
+              ) : (
+                activeOrders.map(order => (
+                  <Link
+                    key={order.order_id || order.id}
+                    to={`/orders/${order.order_id || order.id}`}
+                    style={{ textDecoration: 'none' }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: '#1A1A2E', lineHeight: 1.3 }}>{order.title}</div>
-                      <StatusBadge status={order.status} />
+                    <div
+                      style={{
+                        background: '#fff',
+                        border: '1px solid #E8E6E0',
+                        borderRadius: 14,
+                        padding: '14px 16px',
+                        marginBottom: 10,
+                        cursor: 'pointer',
+                        transition: 'all 0.18s'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.borderColor = '#ccc';
+                        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = '#E8E6E0';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <div>{order.title}</div>
+                        <StatusBadge status={order.order_status || order.status} />
+                      </div>
+
+                      <div style={{ fontSize: 11 }}>
+                        Working for {order.client_name || 'Client'}
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>₹{order.agreed_price || order.price}</span>
+                        <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 11, color: '#6B6B85', marginBottom: 2 }}>
-                      {order.role === 'freelancer' ? "You're the freelancer" : 'You posted this task'}
-                    </div>
-                    <ProgressBar
-                      value={order.progress}
-                      color={order.status === 'review' ? '#FF6B35' : order.status === 'pending' ? '#6C5CE7' : '#00C897'}
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#6B6B85' }}>
-                      <span>{order.status === 'review' ? 'Awaiting approval' : `${order.progress}% done`}</span>
-                      <span>{order.dueIn ? `Due in ${order.dueIn}` : `₹${order.amount}`}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))
+              )}
             </div>
 
           </div>

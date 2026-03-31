@@ -10,6 +10,7 @@ import SignUp from './pages/auth/SignUp';
 import PostTask from './pages/tasks/PostTask';
 import TaskDetail from './pages/tasks/TaskDetail';
 import MyTasks from './pages/tasks/MyTasks';
+import TaskEdit from './pages/tasks/TaskEdit';
 import UserProfile from './pages/profile/UserProfile';
 import FreelancerProfile from './pages/profile/FreelancerProfile';
 import OrderPage from './pages/orders/OrderPage';
@@ -64,6 +65,7 @@ function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/tasks/post" element={<PostTask />} />
           <Route path="/tasks/:id" element={<TaskDetail />} />
+          <Route path="/tasks/:id/edit" element={<TaskEdit />} />
           <Route path="/tasks/mine" element={<MyTasks />} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/freelancer/:id" element={<FreelancerProfile />} />

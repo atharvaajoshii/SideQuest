@@ -1,19 +1,39 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function Search() {
+  const { user, token, API } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const categories = ["All", "Coding", "Design", "Writing", "Physical / Errands", "Tutoring"];
+  const categories = ["All", "Design", "Development", "Writing", "Video", "Tutoring", "Other"];
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // 🔥 Fetch tasks from backend
+  // Read query params from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const search = params.get('search');
+    const category = params.get('category');
+
+    if (search) setSearchTerm(search);
+    if (category && category !== 'All') setSelectedCategory(category);
+  }, [location.search]);
+
+  // Fetch tasks from backend (excludes current user's tasks)
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`);
+        const params = new URLSearchParams();
+        if (selectedCategory !== "All") params.append('category', selectedCategory);
+        if (searchTerm) params.append('search', searchTerm);
+
+        const res = await fetch(`${API}/api/tasks?${params}`);
 
         let data;
         try {
@@ -36,9 +56,9 @@ export default function Search() {
     };
 
     fetchTasks();
-  }, []);
+  }, [selectedCategory, searchTerm, user, API]);
 
-  // 🔍 Filter logic
+  // Filter logic
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -57,7 +77,7 @@ export default function Search() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-slate-900 mb-4">
-            Find a SideQuest 🔍
+            Browse Tasks 🔍
           </h1>
 
           {/* Search Bar */}
@@ -109,13 +129,14 @@ export default function Search() {
           {filteredTasks.map((task) => (
             <div
               key={task.id}
-              className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-primary transition flex flex-col"
+              onClick={() => navigate(`/tasks/${task.id}`)}
+              className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-primary transition flex flex-col cursor-pointer"
             >
               <div className="flex justify-between items-start mb-4">
                 <span className="bg-indigo-50 text-primary text-xs font-bold px-3 py-1 rounded-full">
-                  {task.category}
+                  {task.category || 'General'}
                 </span>
-                <span className="text-secondary font-bold text-lg">
+                <span className="text-slate-900 font-bold text-lg">
                   ₹{task.price}
                 </span>
               </div>
@@ -128,9 +149,14 @@ export default function Search() {
                 {task.description}
               </p>
 
-              <button className="mt-auto w-full bg-slate-900 text-white font-medium py-2.5 rounded-xl hover:bg-primary transition">
-                View Details
-              </button>
+              <div className="mt-auto flex items-center justify-between">
+                <span className="text-xs text-slate-500">
+                  Posted by {task.poster_name || 'Anonymous'}
+                </span>
+                <button className="bg-slate-900 text-white font-medium py-2 px-4 rounded-xl hover:bg-slate-800 transition">
+                  View Details
+                </button>
+              </div>
             </div>
           ))}
         </div>

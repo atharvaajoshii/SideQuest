@@ -10,7 +10,6 @@ export default function OrderDetail() {
   const navigate = useNavigate();
   const { token, user } = useAuth();
   const [order, setOrder] = useState(null);
-  const [freelancer, setFreelancer] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,14 +24,6 @@ export default function OrderDetail() {
       if (res.ok) {
         const data = await res.json();
         setOrder(data.order);
-        // Fetch freelancer details
-        const freelancerRes = await fetch(`${API}/api/users/${data.order.freelancer_id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (freelancerRes.ok) {
-          const freelancerData = await freelancerRes.json();
-          setFreelancer(freelancerData);
-        }
       }
     } catch (err) {
       console.error('Failed to fetch order:', err);
@@ -126,7 +117,7 @@ export default function OrderDetail() {
           <p className="text-slate-500 font-medium mb-4">Order not found</p>
           <button
             onClick={() => navigate('/orders')}
-            className="px-6 py-2 bg-primary text-slate-900 rounded-lg font-semibold"
+            className="px-6 py-2 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 transition"
           >
             Back to Orders
           </button>
@@ -164,19 +155,19 @@ export default function OrderDetail() {
           </div>
 
           {/* Freelancer Info */}
-          {freelancer && (
+          {order.freelancer_name && (
             <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 bg-gradient-to-br from-primary to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  {freelancer.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  {order.freelancer_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-900">{freelancer.name}</p>
+                  <p className="font-semibold text-slate-900">{order.freelancer_name}</p>
                   <p className="text-xs text-slate-500">Freelancer</p>
                 </div>
               </div>
               <Link
-                to={`/freelancer/${freelancer.id}`}
+                to={`/freelancer/${order.freelancer_id}`}
                 className="px-4 py-2 text-sm font-medium text-primary bg-yellow-100 rounded-lg hover:bg-yellow-200 transition"
               >
                 View Profile
@@ -204,7 +195,7 @@ export default function OrderDetail() {
                   <h4 className="font-bold">Freelancer is working</h4>
                   <p className="text-sm text-slate-500">
                     {['in_progress', 'completed', 'delivered'].includes(order.status)
-                      ? `${freelancer?.name || 'Freelancer'} is currently completing the task.`
+                      ? `${order.freelancer_name || 'Freelancer'} is currently completing the task.`
                       : 'Waiting for freelancer to start.'}
                   </p>
                 </div>
@@ -245,15 +236,15 @@ export default function OrderDetail() {
 
           {/* Action Area */}
           <div className="p-8 bg-slate-50 flex gap-4">
-            {freelancer && (
+            {order.freelancer_id && (
               <Link
-                to={`/freelancer/${freelancer.id}`}
+                to={`/freelancer/${order.freelancer_id}`}
                 className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-100 transition text-center"
               >
-                View {freelancer.name?.split(' ')[0]}'s Profile
+                View {order.freelancer_name?.split(' ')[0] || 'Freelancer'}'s Profile
               </Link>
             )}
-            {order.status !== 'completed' && (
+            {order.status !== 'completed' && order.poster_id === user?.id && (
               <button
                 onClick={handleMarkCompleted}
                 className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold shadow-md hover:bg-primary transition"
