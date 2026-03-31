@@ -38,9 +38,9 @@ function Avatar({ initials, bg = '#6C5CE7', size = 32 }) {
 
 function StatusBadge({ status }) {
   const map = {
-    active:  { label: 'In Progress', bg: 'rgba(0,200,151,0.12)',  color: '#008a66' },
-    review:  { label: 'In Review',   bg: 'rgba(255,107,53,0.12)', color: '#c95520' },
-    pending: { label: 'Pending',     bg: 'rgba(108,92,231,0.12)', color: '#5a4bc4' },
+    active: { label: 'In Progress', bg: 'rgba(0,200,151,0.12)', color: '#008a66' },
+    review: { label: 'In Review', bg: 'rgba(255,107,53,0.12)', color: '#c95520' },
+    pending: { label: 'Pending', bg: 'rgba(108,92,231,0.12)', color: '#5a4bc4' },
   };
   const s = map[status] || map.pending;
   return (
@@ -66,40 +66,39 @@ function ProgressBar({ value, color = '#00C897' }) {
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState('All');
-  const [searchQuery, setSearchQuery]   = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [userStats, setUserStats] = useState({ earned: 0, completed: 0 });
   const [recommendedTasks, setRecommendedTasks] = useState([]);
   const [activeOrders, setActiveOrders] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const navigate = useNavigate();
   const { user, token, API } = useAuth();
 
-  // Fetch recommended tasks
   useEffect(() => {
     if (user && token) {
-      console.log('Fetching recommended tasks, API:', API, 'User:', user);
+      // Fetch recommended tasks
       fetch(`${API}/api/tasks/feed/recommended`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then(res => {
-          console.log('Recommended tasks response status:', res.status);
-          return res.json();
-        })
-        .then(data => {
-          console.log('Recommended tasks data:', data);
-          setRecommendedTasks(data);
-        })
-        .catch(err => {
-          console.error('Failed to fetch recommended tasks:', err);
-          setRecommendedTasks([]);
-        });
+        .then(res => res.ok ? res.json() : [])
+        .then(data => setRecommendedTasks(Array.isArray(data) ? data : (data.tasks ?? [])))
+        .catch(() => setRecommendedTasks([]));
 
-      // Fetch active orders (tasks I'm working on)
+      // Fetch active orders
       fetch(`${API}/api/tasks/my-work`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then(res => res.json())
-        .then(data => setActiveOrders(data))
+        .then(res => res.ok ? res.json() : [])
+        .then(data => setActiveOrders(Array.isArray(data) ? data : (data.orders ?? [])))
         .catch(() => setActiveOrders([]));
+
+      // Fetch announcements
+      fetch(`${API}/api/admin/announcements`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => res.ok ? res.json() : [])
+        .then(data => setAnnouncements(Array.isArray(data) ? data : []))
+        .catch(() => setAnnouncements([]));
     }
   }, [user, token, API]);
 
@@ -116,7 +115,7 @@ export default function Home() {
   // Filter tasks by search and category
   const filteredTasks = recommendedTasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          task.description.toLowerCase().includes(searchQuery.toLowerCase());
+      task.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = activeFilter === 'All' || task.category === activeFilter;
     return matchesSearch && matchesCategory;
   });
@@ -137,9 +136,9 @@ export default function Home() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24,
         }}>
           {[
-            { w: 260, h: 260, bg: '#6C5CE7', top: -60,  right: 80,  opacity: 0.35 },
+            { w: 260, h: 260, bg: '#6C5CE7', top: -60, right: 80, opacity: 0.35 },
             { w: 180, h: 180, bg: '#FF6B35', bottom: -60, right: 20, opacity: 0.35 },
-            { w: 140, h: 140, bg: '#FFD93D', top: 20,   right: 260, opacity: 0.12 },
+            { w: 140, h: 140, bg: '#FFD93D', top: 20, right: 260, opacity: 0.12 },
           ].map((b, i) => (
             <div key={i} style={{
               position: 'absolute', borderRadius: '50%',
@@ -195,8 +194,8 @@ export default function Home() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', zIndex: 2, flexShrink: 0 }}>
             {[
-              { label: 'Total Earned',    value: `₹${userStats.earned.toLocaleString('en-IN')}`, change: '+ earnings', icon: <TrendingUp size={14} /> },
-              { label: 'Tasks Completed', value: userStats.completed,                            change: 'tasks done', icon: <Star size={14} /> },
+              { label: 'Total Earned', value: `₹${userStats.earned.toLocaleString('en-IN')}`, change: '+ earnings', icon: <TrendingUp size={14} /> },
+              { label: 'Tasks Completed', value: userStats.completed, change: 'tasks done', icon: <Star size={14} /> },
             ].map(({ label, value, change, icon }) => (
               <div key={label} style={{
                 background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)',
@@ -241,8 +240,8 @@ export default function Home() {
                   fontSize: 13, fontWeight: 600, padding: '6px 16px', borderRadius: 100, cursor: 'pointer',
                   border: '1px solid', transition: 'all 0.15s',
                   borderColor: activeFilter === f ? '#1A1A2E' : '#D1D5DB',
-                  background:  activeFilter === f ? '#1A1A2E' : '#fff',
-                  color:       activeFilter === f ? '#FFD93D' : '#374151',
+                  background: activeFilter === f ? '#1A1A2E' : '#fff',
+                  color: activeFilter === f ? '#FFD93D' : '#374151',
                 }}>
                   {f}
                 </button>
@@ -338,31 +337,46 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Announcement — TODO: GET /api/announcements?active=true */}
-            <div style={{ background: '#fff', border: '1px solid #E8E6E0', borderRadius: 18, padding: 18 }}>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: '#1A1A2E', marginBottom: 12 }}>Announcement</div>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(108,92,231,0.07), rgba(255,110,180,0.05))',
-                border: '1px solid rgba(108,92,231,0.15)', borderRadius: 14, padding: '14px 16px',
-                display: 'flex', gap: 12, alignItems: 'flex-start',
-              }}>
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(108,92,231,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📣</div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E', marginBottom: 4 }}>Hackathon Season is here!</div>
-                  <div style={{ fontSize: 12, color: '#4B5563', lineHeight: 1.5 }}>Browse 40+ new tasks posted by student teams needing help this week.</div>
+            {/* Announcements */}
+            {announcements.length > 0 && (
+              <div style={{ background: '#fff', border: '1px solid #E8E6E0', borderRadius: 18, padding: 18 }}>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: '#1A1A2E', marginBottom: 12 }}>
+                  Announcement
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {announcements.slice(0, 3).map((item) => (
+                    <div key={item.id} style={{
+                      background: 'linear-gradient(135deg, rgba(108,92,231,0.07), rgba(255,110,180,0.05))',
+                      border: '1px solid rgba(108,92,231,0.15)', borderRadius: 14, padding: '14px 16px',
+                      display: 'flex', gap: 12, alignItems: 'flex-start',
+                    }}>
+                      <div style={{
+                        width: 34, height: 34, borderRadius: 10,
+                        background: 'rgba(108,92,231,0.1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 16, flexShrink: 0
+                      }}>📣</div>
+                      <div>
+                        <div style={{ fontSize: 12, color: '#4B5563', lineHeight: 1.5 }}>{item.text}</div>
+                        <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+                          {new Date(item.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Quick Actions */}
             <div style={{ background: '#fff', border: '1px solid #E8E6E0', borderRadius: 18, padding: 18 }}>
               <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: '#1A1A2E', marginBottom: 14 }}>Quick Actions</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {[
-                  { label: 'Post Task', sub: 'Hire someone', icon: <FileText size={16} />, iconBg: 'rgba(255,107,53,0.1)',   iconColor: '#FF6B35', to: '/tasks/post' },
-                  { label: 'Browse',    sub: 'Find work',   icon: <Search size={16} />,   iconBg: 'rgba(108,92,231,0.1)',   iconColor: '#6C5CE7', to: '/search'     },
-                  { label: 'Messages',  sub: '2 unread',    icon: <Zap size={16} />,       iconBg: 'rgba(0,200,151,0.1)',    iconColor: '#00C897', to: '/messages'   },
-                  { label: 'Profile',   sub: 'Edit info',   icon: <CreditCard size={16} />,iconBg: 'rgba(255,217,61,0.15)', iconColor: '#b89a00', to: '/profile'    },
+                  { label: 'Post Task', sub: 'Hire someone', icon: <FileText size={16} />, iconBg: 'rgba(255,107,53,0.1)', iconColor: '#FF6B35', to: '/tasks/post' },
+                  { label: 'Browse', sub: 'Find work', icon: <Search size={16} />, iconBg: 'rgba(108,92,231,0.1)', iconColor: '#6C5CE7', to: '/search' },
+                  { label: 'Messages', sub: '2 unread', icon: <Zap size={16} />, iconBg: 'rgba(0,200,151,0.1)', iconColor: '#00C897', to: '/messages' },
+                  { label: 'Profile', sub: 'Edit info', icon: <CreditCard size={16} />, iconBg: 'rgba(255,217,61,0.15)', iconColor: '#b89a00', to: '/profile' },
                 ].map(({ label, sub, icon, iconBg, iconColor, to }) => (
                   <Link key={to} to={to} style={{ textDecoration: 'none' }}>
                     <div
