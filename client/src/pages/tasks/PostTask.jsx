@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PostTask() {
+  const { token, API } = useAuth(); // ✅ use context, not sessionStorage directly
   const [taskData, setTaskData] = useState({
     title: '',
     description: '',
@@ -9,36 +11,30 @@ export default function PostTask() {
     category: 'Coding',
   });
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
 
     if (!taskData.title || !taskData.description || !taskData.price) {
       setError('Please fill all fields');
       return;
     }
 
+    if (!token) {
+      setError('You must be logged in');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-
-      if (!token) {
-        setError('You must be logged in');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`, {
+      const response = await fetch(`${API}/api/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // ✅ FIX: always add "Bearer " here — token stored raw
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -49,11 +45,9 @@ export default function PostTask() {
         }),
       });
 
-      let data;
-      try { data = await response.json(); } catch { data = {}; }
+      const data = await response.json();
 
       if (response.ok) {
-        // ✅ FIX: navigate to the new task instead of alert()
         navigate(`/tasks/${data.id}`);
       } else {
         setError(data.message || 'Failed to post task');
