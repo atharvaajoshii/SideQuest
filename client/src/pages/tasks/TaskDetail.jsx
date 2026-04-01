@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { MapPin, Clock, DollarSign, User, ShieldCheck, Edit, Trash2, Loader2 } from 'lucide-react';
+import { MapPin, Clock, DollarSign, User, ShieldCheck, Edit, Trash2, Loader2, CheckCircle, MessageSquare } from 'lucide-react';
 
 export default function TaskDetail() {
   const { id } = useParams();
@@ -11,6 +11,10 @@ export default function TaskDetail() {
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [applyMessage, setApplyMessage] = useState('');
+  const [offerPrice, setOfferPrice] = useState('');
+  const [showApplyForm, setShowApplyForm] = useState(false);
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -50,6 +54,59 @@ export default function TaskDetail() {
       console.error('Failed to delete task:', err);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleApplyForTask = async () => {
+    // Validate
+    const finalPrice = offerPrice ? parseFloat(offerPrice) : parseFloat(task.price);
+    if (isNaN(finalPrice) || finalPrice <= 0) {
+      alert('Please enter a valid price');
+      return;
+    }
+
+    // Check if logged in
+    if (!token) {
+      alert('Please log in to apply for tasks');
+      navigate('/signin');
+      return;
+    }
+
+    setApplying(true);
+    try {
+      console.log('Applying for task:', id);
+      console.log('Token:', token ? 'Present' : 'Missing');
+      console.log('Data:', { message: applyMessage.trim(), offered_price: finalPrice });
+
+      const res = await fetch(`${API}/api/orders/task/${id}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: applyMessage.trim(),
+          offered_price: finalPrice
+        })
+      });
+
+      const data = await res.json();
+      console.log('Response status:', res.status);
+      console.log('Response data:', data);
+
+      if (res.ok) {
+        alert('Application submitted! The task poster will review your offer.');
+        setShowApplyForm(false);
+        setApplyMessage('');
+        setOfferPrice('');
+      } else {
+        alert(data.message || 'Failed to apply');
+      }
+    } catch (err) {
+      console.error('Failed to apply:', err);
+      alert('Could not connect to server. Is it running?');
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -166,12 +223,68 @@ export default function TaskDetail() {
                   Edit Task
                 </button>
               </>
+            ) : task.status === 'Open' ? (
+              <>
+                {showApplyForm ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Your Offer (₹)</label>
+                      <input
+                        type="number"
+                        value={offerPrice}
+                        onChange={(e) => setOfferPrice(e.target.value)}
+                        placeholder={task.price}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-center text-lg font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Message (optional)</label>
+                      <textarea
+                        value={applyMessage}
+                        onChange={(e) => setApplyMessage(e.target.value)}
+                        placeholder="Explain why you're the best fit for this task..."
+                        rows={3}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none"
+                      />
+                    </div>
+                    <button
+                      onClick={handleApplyForTask}
+                      disabled={applying}
+                      className="w-full bg-green-500 text-white py-3 rounded-xl font-bold shadow-md hover:bg-green-600 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                    >
+                      {applying ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
+                      {applying ? 'Submitting...' : 'Submit Application'}
+                    </button>
+                    <button
+                      onClick={() => { setShowApplyForm(false); setApplyMessage(''); setOfferPrice(''); }}
+                      className="w-full bg-slate-100 text-slate-700 py-2 rounded-lg font-medium hover:bg-slate-200 transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setShowApplyForm(true)}
+                      className="block w-full bg-green-500 text-white py-4 rounded-xl font-bold shadow-md hover:bg-green-600 transition mb-3 flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle size={20} />
+                      Apply for Task
+                    </button>
+                    <Link to={`/negotiate/${id}`} className="block w-full bg-slate-900 text-white py-3 rounded-xl font-bold shadow-md hover:bg-primary transition mb-3">
+                      <MessageSquare size={18} className="inline mr-2" />
+                      Negotiate First
+                    </Link>
+                    <p className="text-xs text-slate-400">Apply directly or negotiate the price with the poster.</p>
+                  </>
+                )}
+              </>
             ) : (
               <>
-                <Link to={`/negotiate/${id}`} className="block w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-md hover:bg-primary transition mb-3">
-                  Make an Offer
-                </Link>
-                <p className="text-xs text-slate-400">You can negotiate the final price with the poster.</p>
+                <p className="text-sm text-slate-500 mb-3">This task is {task.status}</p>
+                <button disabled className="block w-full bg-slate-200 text-slate-400 py-4 rounded-xl font-bold cursor-not-allowed">
+                  Task Not Available
+                </button>
               </>
             )}
           </div>

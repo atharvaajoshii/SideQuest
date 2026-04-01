@@ -18,4 +18,10 @@ router.get('/:id', orderController.getOrderById);
 // POST /api/orders/:id/complete - Mark order as completed
 router.post('/:id/complete', orderController.markOrderCompleted);
 
+// POST /api/orders/task/:taskId/accept - Accept a freelancer's offer (poster's perspective)
+router.post('/task/:taskId/accept', orderController.acceptFreelancerOffer);
+
+// POST /api/orders/task/:taskId/apply - Apply for a task (freelancer's perspective)
+router.post('/task/:taskId/apply', orderController.applyForTask);
+
 module.exports = router;
