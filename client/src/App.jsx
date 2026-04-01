@@ -8,6 +8,8 @@ import Search from './pages/Search';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import About from './pages/About';
+import Contact from './pages/Contact';
 import PostTask from './pages/tasks/PostTask';
 import TaskDetail from './pages/tasks/TaskDetail';
 import MyTasks from './pages/tasks/MyTasks';
@@ -27,6 +29,7 @@ import AdminStats from './pages/admin/AdminStats';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminReports from './pages/admin/AdminReports';
 import AdminProfile from './pages/admin/AdminProfile';
+import AdminContactMessages from './pages/admin/AdminContactMessages';
 import Messages from './pages/Messages';
 import MessageDetail from './pages/MessageDetail';
 import Notifications from './pages/Notifications';
@@ -60,6 +63,10 @@ function App() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/faq" element={<Navigate to="/help" replace />} />
+        <Route path="/help" element={<Contact />} />
 
         {/* PROTECTED — needs login */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -89,6 +96,7 @@ function App() {
           <Route path="/admin/stats" element={<AdminStats />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/messages" element={<AdminContactMessages />} />
         <Route path="/admin/profile" element={<AdminProfile />} />
         </Route>
       </Routes>

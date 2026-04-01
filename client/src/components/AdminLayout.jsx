@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Users, Briefcase, AlertTriangle, TrendingUp, Megaphone, Settings, BarChart2, ArrowLeft, User } from 'lucide-react';
+import { Users, Briefcase, AlertTriangle, TrendingUp, Megaphone, Settings, BarChart2, ArrowLeft, User, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function AdminLayout() {
@@ -25,8 +25,8 @@ export default function AdminLayout() {
     { to: '/admin/users',          label: 'Manage Users',    icon: <Users size={18} /> },
     { to: '/admin/tasks',          label: 'Manage Tasks',    icon: <Briefcase size={18} /> },
     { to: '/admin/reports',        label: 'Review Reports',  icon: <AlertTriangle size={18} /> },
+    { to: '/admin/messages',       label: 'Contact Messages', icon: <Mail size={18} /> },
     { to: '/admin/announcements',  label: 'Announcements',   icon: <Megaphone size={18} /> },
-    // FIX: /admin/stats was a registered route with a full page but no sidebar link
     { to: '/admin/stats',          label: 'Statistics',      icon: <TrendingUp size={18} /> },
     { to: '/admin/profile',        label: 'My Profile',      icon: <User size={18} /> },
     { to: '/admin/settings',       label: 'Settings',        icon: <Settings size={18} /> },
