@@ -1,20 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination } from 'swiper/modules';
 import { Briefcase, DollarSign, ShieldCheck, ArrowRight } from 'lucide-react';
 
-// Import Swiper styles
-import 'swiper/css';
-import 'swiper/css/pagination';
-
 export default function Landing() {
-  const dummyQuests = [
-    { title: "Design a Logo for Tech Club", price: "₹500", tag: "Design" },
-    { title: "Debug React Assignment", price: "₹300", tag: "Coding" },
-    { title: "Write a 500-word Blog", price: "₹250", tag: "Writing" },
-    { title: "Create a PowerPoint", price: "₹400", tag: "Presentation" },
-    { title: "Video Editing for Reel", price: "₹600", tag: "Video" },
+  // No dummy data - real tasks will be fetched from the database
+  const sampleCategories = [
+    { name: "Design", icon: "🎨", description: "Logos, graphics, UI/UX" },
+    { name: "Coding", icon: "💻", description: "Web apps, scripts, debugging" },
+    { name: "Writing", icon: "✍️", description: "Blogs, essays, content" },
+    { name: "Video", icon: "🎬", description: "Editing, reels, animations" },
   ];
 
   return (
@@ -86,44 +80,21 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Carousel Section: Live Quests */}
-      <section className="py-20 bg-slate-900 text-white overflow-hidden">
+      {/* Categories Section: Show what types of tasks are supported -->}
+      <section className="py-20 bg-slate-900 text-white">
         <div className="max-w-6xl mx-auto px-4 mb-12 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Trending SideQuests 🔥</h2>
-          <p className="text-slate-400">Jump in and grab these opportunities before they're gone.</p>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Popular Categories</h2>
+          <p className="text-slate-400">Explore tasks across different skill areas</p>
         </div>
-        
-        <div className="max-w-7xl mx-auto px-4">
-          <Swiper
-            modules={[Autoplay, Pagination]}
-            spaceBetween={30}
-            slidesPerView={1}
-            breakpoints={{
-              640: { slidesPerView: 2 },
-              1024: { slidesPerView: 3 },
-              1280: { slidesPerView: 4 },
-            }}
-            autoplay={{ delay: 2500, disableOnInteraction: false }}
-            pagination={{ clickable: true, dynamicBullets: true }}
-            className="pb-12"
-          >
-            {dummyQuests.map((quest, index) => (
-              <SwiperSlide key={index}>
-                <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-primary transition cursor-pointer h-full flex flex-col">
-                  <span className="text-xs font-bold text-primary bg-indigo-900/50 px-3 py-1 rounded-full w-max mb-4">
-                    {quest.tag}
-                  </span>
-                  <h3 className="text-lg font-bold mb-2 grow">{quest.title}</h3>
-                  <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-700">
-                    <span className="text-secondary font-bold text-xl">{quest.price}</span>
-                    <button className="text-sm bg-white text-dark font-bold px-4 py-1.5 rounded-lg hover:bg-slate-200 transition">
-                      View
-                    </button>
-                  </div>
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
+
+        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {sampleCategories.map((category, index) => (
+            <div key={index} className="bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-primary transition text-center">
+              <div className="text-4xl mb-4">{category.icon}</div>
+              <h3 className="text-lg font-bold mb-2">{category.name}</h3>
+              <p className="text-slate-400 text-sm">{category.description}</p>
+            </div>
+          ))}
         </div>
       </section>
 

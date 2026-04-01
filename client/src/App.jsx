@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Search from './pages/Search';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
+import ForgotPassword from './pages/auth/ForgotPassword';
 import PostTask from './pages/tasks/PostTask';
 import TaskDetail from './pages/tasks/TaskDetail';
 import MyTasks from './pages/tasks/MyTasks';
@@ -58,6 +59,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* PROTECTED — needs login */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
