@@ -3,10 +3,9 @@ const pool = require('../config/db');
 // GET ORDER BY ID (protected - only for users involved in the order)
 exports.getOrderById = async (req, res) => {
   try {
-    const { orderId } = req.params;
+    const { id } = req.params; // ✅ was orderId
     const userId = req.user.id;
 
-    // Fetch order with task details and user info
     const orderResult = await pool.query(
       `SELECT o.*, t.title as task_title, t.description as task_description,
         uc.name as client_name, uf.name as freelancer_name
@@ -15,7 +14,7 @@ exports.getOrderById = async (req, res) => {
        LEFT JOIN users uc ON o.poster_id = uc.id
        LEFT JOIN users uf ON o.freelancer_id = uf.id
        WHERE o.id = $1 AND (o.poster_id = $2 OR o.freelancer_id = $2)`,
-      [orderId, userId]
+      [id, userId] // ✅ was orderId
     );
 
     if (orderResult.rows.length === 0) {
@@ -29,26 +28,23 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
-// MARK ORDER AS COMPLETED
 exports.markOrderCompleted = async (req, res) => {
   try {
-    const { orderId } = req.params;
+    const { id } = req.params; // ✅ was orderId
     const userId = req.user.id;
 
-    // Verify user is the client (poster)
     const orderCheck = await pool.query(
       'SELECT * FROM orders WHERE id = $1 AND poster_id = $2',
-      [orderId, userId]
+      [id, userId] // ✅ was orderId
     );
 
     if (orderCheck.rows.length === 0) {
       return res.status(404).json({ message: 'Order not found or you are not the client' });
     }
 
-    // Update order status
     const updatedOrder = await pool.query(
       'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-      ['completed', orderId]
+      ['completed', id] // ✅ was orderId
     );
 
     res.json({ order: updatedOrder.rows[0], message: 'Order marked as completed' });
