@@ -3,39 +3,67 @@ import { Users, Briefcase, AlertTriangle, TrendingUp, Loader2, ShoppingBag, Indi
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminHome() {
-  const { token, API } = useAuth();
-  const [stats, setStats] = useState({ totalUsers: 0, totalTasks: 0, totalOrders: 0, totalVolume: 0 });
+  const { token, API, user } = useAuth(); // ✅ FIXED (added user)
+
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalTasks: 0,
+    totalOrders: 0,
+    totalVolume: 0
+  });
   const [pendingReports, setPendingReports] = useState(0);
   const [recentUsers, setRecentUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
+<<<<<<< Updated upstream
+=======
+  // ✅ Prevent crash when user is not yet loaded
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin" size={40} />
+      </div>
+    );
+  }
+
+>>>>>>> Stashed changes
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [token, API]);
 
   const fetchStats = async () => {
     try {
       const [statsRes, reportsRes, usersRes] = await Promise.all([
-        fetch(`${API}/api/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API}/api/admin/reports?status=pending`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API}/api/admin/users?limit=5`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API}/api/admin/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        fetch(`${API}/api/admin/reports?status=pending`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        fetch(`${API}/api/admin/users?limit=5`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
       ]);
 
       if (statsRes.ok) {
         const data = await statsRes.json();
         setStats(data);
       }
+
       if (reportsRes.ok) {
         const data = await reportsRes.json();
         setPendingReports(Array.isArray(data) ? data.length : data.count || 0);
       }
+
       if (usersRes.ok) {
         const data = await usersRes.json();
         setRecentUsers(Array.isArray(data) ? data.slice(0, 5) : []);
       }
+
     } catch (err) {
       console.error('Failed to fetch stats:', err);
     }
+
     setLoading(false);
   };
 
@@ -63,7 +91,9 @@ export default function AdminHome() {
           {statCards.map(({ icon: Icon, label, value, bg, color }) => (
             <div key={label} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
               <div className="flex items-center gap-4 mb-4">
-                <div className={`p-3 ${bg} ${color} rounded-xl`}><Icon size={24} /></div>
+                <div className={`p-3 ${bg} ${color} rounded-xl`}>
+                  <Icon size={24} />
+                </div>
                 <h3 className="font-bold text-slate-700">{label}</h3>
               </div>
               <p className="text-3xl font-extrabold text-slate-900">{value}</p>
@@ -71,22 +101,31 @@ export default function AdminHome() {
           ))}
         </div>
 
-        {/* Orders and Volume row */}
+        {/* Orders and Volume */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-amber-100 text-amber-600 rounded-xl"><ShoppingBag size={24} /></div>
+              <div className="p-3 bg-amber-100 text-amber-600 rounded-xl">
+                <ShoppingBag size={24} />
+              </div>
               <h3 className="font-bold text-slate-700">Total Orders</h3>
             </div>
-            <p className="text-3xl font-extrabold text-slate-900">{stats.totalOrders?.toLocaleString() ?? '0'}</p>
+            <p className="text-3xl font-extrabold text-slate-900">
+              {stats.totalOrders?.toLocaleString() ?? '0'}
+            </p>
           </div>
+
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-purple-100 text-purple-600 rounded-xl"><TrendingUp size={24} /></div>
+              <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
+                <TrendingUp size={24} />
+              </div>
               <h3 className="font-bold text-slate-700">Avg. Order Value</h3>
             </div>
             <p className="text-3xl font-extrabold text-slate-900">
-              ₹{stats.totalOrders > 0 ? ((stats.totalVolume || 0) / stats.totalOrders).toFixed(0) : '0'}
+              ₹{stats.totalOrders > 0
+                ? ((stats.totalVolume || 0) / stats.totalOrders).toFixed(0)
+                : '0'}
             </p>
           </div>
         </div>
@@ -97,6 +136,7 @@ export default function AdminHome() {
             <div className="p-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-900">Recent Sign-ups</h2>
             </div>
+
             <div className="divide-y divide-slate-100">
               {recentUsers.map((user) => (
                 <div key={user.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition">
@@ -109,7 +149,12 @@ export default function AdminHome() {
                       <p className="text-slate-500 text-xs">{user.email}</p>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-bold rounded-full ${user.is_suspended ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+
+                  <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                    user.is_suspended
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-green-100 text-green-700'
+                  }`}>
                     {user.is_suspended ? 'Suspended' : 'Active'}
                   </span>
                 </div>

@@ -14,6 +14,10 @@ export default function AdminContactMessages() {
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
   useEffect(() => {
     fetchMessages();
     fetchStats();
@@ -202,7 +206,7 @@ export default function AdminContactMessages() {
             </div>
           </div>
 
-          <div className="overflow-y-auto max-h-[600px]">
+          <div className="overflow-y-auto max-h-150">
             {loading ? (
               <div className="p-8 text-center text-slate-500">Loading...</div>
             ) : messages.length === 0 ? (
@@ -305,7 +309,7 @@ export default function AdminContactMessages() {
               </div>
 
               {/* Message Content */}
-              <div className="p-6 flex-grow overflow-y-auto">
+              <div className="p-6 grow overflow-y-auto">
                 <h3 className="text-sm font-semibold text-slate-700 mb-2">Message</h3>
                 <div className="bg-slate-50 rounded-xl p-4 mb-6">
                   <p className="text-slate-800 whitespace-pre-wrap">{selectedMessage.message}</p>

@@ -9,6 +9,11 @@ export default function AdminAnnouncements() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+<<<<<<< Updated upstream
+=======
+
+
+>>>>>>> Stashed changes
   useEffect(() => {
     fetchAnnouncements();
   }, []);
@@ -118,7 +123,7 @@ export default function AdminAnnouncements() {
                   </div>
                   <button
                     onClick={() => handleDelete(item.id)}
-                    className="text-slate-400 hover:text-red-500 transition ml-4 flex-shrink-0"
+                    className="text-slate-400 hover:text-red-500 transition ml-4 shrink-0"
                   >
                     <Trash2 size={20} />
                   </button>
