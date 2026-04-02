@@ -46,21 +46,21 @@ export default function SignIn() {
   return (
     <>
       <AuthHeader />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 flex items-center justify-center py-12 px-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center py-12 px-4">
         <div className="w-full max-w-md">
           {/* Card */}
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-slate-900 to-indigo-900 px-8 py-10 text-center">
+            <div className="bg-[#1A1A2E] px-8 py-8 text-center">
               <div className="flex justify-center mb-4">
-                <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-sm">
-                  <Shield size={40} className="text-primary" />
+                <div className="p-3 bg-[#FFD93D]/20 rounded-xl">
+                  <Shield size={36} className="text-[#FFD93D]" />
                 </div>
               </div>
-              <h2 className="text-3xl font-bold text-white mb-2">
+              <h2 className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "'Syne', sans-serif" }}>
                 Welcome Back
               </h2>
-              <p className="text-slate-300 text-sm">
+              <p className="text-white/60 text-sm">
                 Sign in to continue your SideQuest journey
               </p>
             </div>
@@ -89,7 +89,7 @@ export default function SignIn() {
                     <input
                       type="email"
                       required
-                      className="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm bg-slate-50 hover:bg-white"
+                      className="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD93D]/50 focus:border-[#FFD93D] transition-all text-sm bg-slate-50 hover:bg-white"
                       placeholder="student@college.edu"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -109,7 +109,7 @@ export default function SignIn() {
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
-                      className="w-full pl-12 pr-12 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm bg-slate-50 hover:bg-white"
+                      className="w-full pl-12 pr-12 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD93D]/50 focus:border-[#FFD93D] transition-all text-sm bg-slate-50 hover:bg-white"
                       placeholder="Enter your password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -128,7 +128,7 @@ export default function SignIn() {
                 <div className="flex justify-end">
                   <Link
                     to="/forgot-password"
-                    className="text-sm font-medium text-primary hover:text-indigo-600 transition-colors"
+                    className="text-sm font-medium text-[#4F46E5] hover:text-indigo-600 transition-colors"
                   >
                     Forgot your password?
                   </Link>
@@ -138,7 +138,7 @@ export default function SignIn() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-slate-900 to-indigo-900 text-white font-bold rounded-xl hover:from-slate-800 hover:to-indigo-800 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
+                  className="w-full py-3.5 bg-[#FFD93D] text-[#1A1A2E] font-bold rounded-xl hover:bg-[#e6c235] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md flex items-center justify-center gap-2 group"
                 >
                   {loading ? (
                     <>
@@ -170,19 +170,11 @@ export default function SignIn() {
               {/* Sign Up Link */}
               <Link
                 to="/signup"
-                className="block w-full py-4 text-center border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:border-primary hover:text-primary transition-all group"
+                className="block w-full py-3.5 text-center border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:border-[#FFD93D] hover:text-[#1A1A2E] transition-all"
               >
                 Create an Account
-                <ArrowRight size={20} className="inline-block ml-2 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
-          </div>
-
-          {/* Trust Badges */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-slate-500">
-              Secure student-only platform
-            </p>
           </div>
         </div>
       </div>

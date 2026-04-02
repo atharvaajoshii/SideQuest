@@ -112,21 +112,21 @@ export default function ForgotPassword() {
     return (
       <>
         <AuthHeader />
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 flex flex-col">
+        <div className="min-h-screen bg-slate-50 flex flex-col">
           <div className="flex-grow flex items-center justify-center py-12 px-4">
             <div className="w-full max-w-md">
-              <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-10 text-center">
+                <div className="bg-[#1A1A2E] px-8 py-8 text-center">
                   <div className="flex justify-center mb-4">
-                    <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-sm">
-                      <Lock size={40} className="text-white" />
+                    <div className="p-3 bg-[#FFD93D]/20 rounded-xl">
+                      <Lock size={36} className="text-[#FFD93D]" />
                     </div>
                   </div>
-                  <h2 className="text-3xl font-bold text-white mb-2">
+                  <h2 className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "'Syne', sans-serif" }}>
                     Reset Password
                   </h2>
-                  <p className="text-emerald-100 text-sm">
+                  <p className="text-white/60 text-sm">
                     Enter your new password below
                   </p>
                 </div>
@@ -145,7 +145,7 @@ export default function ForgotPassword() {
                       </p>
                       <button
                         onClick={() => navigate('/signin')}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-indigo-900 text-white font-bold rounded-xl hover:from-slate-800 hover:to-indigo-800 transition-all"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-[#FFD93D] text-[#1A1A2E] font-bold rounded-xl hover:bg-[#e6c235] transition-all"
                       >
                         <ArrowLeft size={18} />
                         Back to Sign In
@@ -175,7 +175,7 @@ export default function ForgotPassword() {
                             <input
                               type="text"
                               required
-                              className="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-mono bg-slate-50"
+                              className="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD93D]/50 focus:border-[#FFD93D] transition-all text-sm font-mono bg-slate-50"
                               placeholder="Paste your reset token here"
                               value={resetToken}
                               onChange={(e) => setResetToken(e.target.value)}
@@ -195,7 +195,7 @@ export default function ForgotPassword() {
                             <input
                               type={showNewPassword ? 'text' : 'password'}
                               required
-                              className="w-full pl-12 pr-12 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm bg-slate-50"
+                              className="w-full pl-12 pr-12 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD93D]/50 focus:border-[#FFD93D] transition-all text-sm bg-slate-50"
                               placeholder="Enter new password"
                               value={newPassword}
                               onChange={(e) => setNewPassword(e.target.value)}
@@ -222,7 +222,7 @@ export default function ForgotPassword() {
                             <input
                               type={showConfirmPassword ? 'text' : 'password'}
                               required
-                              className="w-full pl-12 pr-12 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm bg-slate-50"
+                              className="w-full pl-12 pr-12 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD93D]/50 focus:border-[#FFD93D] transition-all text-sm bg-slate-50"
                               placeholder="Confirm new password"
                               value={confirmPassword}
                               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -240,7 +240,7 @@ export default function ForgotPassword() {
                         <button
                           type="submit"
                           disabled={resetLoading}
-                          className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2"
+                          className="w-full py-3.5 bg-[#FFD93D] text-[#1A1A2E] font-bold rounded-xl hover:bg-[#e6c235] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md flex items-center justify-center gap-2"
                         >
                           {resetLoading ? (
                             <>
@@ -264,7 +264,7 @@ export default function ForgotPassword() {
                   <div className="mt-6 text-center">
                     <Link
                       to="/signin"
-                      className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-indigo-600 transition-colors"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-[#4F46E5] hover:text-indigo-600 transition-colors"
                     >
                       <ArrowLeft size={16} />
                       Back to Sign In
@@ -284,23 +284,23 @@ export default function ForgotPassword() {
   return (
     <>
       <AuthHeader />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 flex flex-col">
+      <div className="min-h-screen bg-slate-50 flex flex-col">
         <div className="flex-grow flex items-center justify-center py-12 px-4">
           <div className="w-full max-w-md">
             {/* Card */}
-            <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-10 text-center">
+              <div className="bg-[#1A1A2E] px-8 py-8 text-center">
                 <div className="flex justify-center mb-4">
-                  <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-sm">
-                    <Mail size={40} className="text-white" />
+                  <div className="p-3 bg-[#FFD93D]/20 rounded-xl">
+                    <Mail size={36} className="text-[#FFD93D]" />
                   </div>
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-2">
+                <h2 className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "'Syne', sans-serif" }}>
                   Forgot Password?
                 </h2>
-                <p className="text-amber-100 text-sm">
-                  No worries! Enter your email and we'll send you reset instructions.
+                <p className="text-white/60 text-sm">
+                  Enter your email and we'll send reset instructions
                 </p>
               </div>
 
@@ -318,7 +318,7 @@ export default function ForgotPassword() {
                               <p className="text-xs font-semibold text-slate-700">Your Reset Token (Development Mode)</p>
                               <button
                                 onClick={copyToken}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary hover:text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition"
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-[#4F46E5] hover:text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition"
                               >
                                 {copied ? (
                                   <>
@@ -342,7 +342,7 @@ export default function ForgotPassword() {
                                   sessionStorage.setItem('sq_reset_token', resetToken);
                                   setShowResetForm(true);
                                 }}
-                                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-indigo-600 transition"
+                                className="inline-flex items-center gap-1 text-sm font-medium text-[#4F46E5] hover:text-indigo-600 transition"
                               >
                                 Go to Reset Password Form →
                               </button>
@@ -378,7 +378,7 @@ export default function ForgotPassword() {
                       <input
                         type="email"
                         required
-                        className="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all text-sm bg-slate-50 hover:bg-white"
+                        className="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD93D]/50 focus:border-[#FFD93D] transition-all text-sm bg-slate-50 hover:bg-white"
                         placeholder="student@college.edu"
                         value={requestEmail}
                         onChange={(e) => setRequestEmail(e.target.value)}
@@ -389,7 +389,7 @@ export default function ForgotPassword() {
                   <button
                     type="submit"
                     disabled={requestLoading}
-                    className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-[#FFD93D] text-[#1A1A2E] font-bold rounded-xl hover:bg-[#e6c235] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md flex items-center justify-center gap-2"
                   >
                     {requestLoading ? (
                       <>
@@ -411,7 +411,7 @@ export default function ForgotPassword() {
                 <div className="mt-6 text-center">
                   <Link
                     to="/signin"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-indigo-600 transition-colors"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-[#4F46E5] hover:text-indigo-600 transition-colors"
                   >
                     <ArrowLeft size={16} />
                     Back to Sign In
@@ -424,7 +424,7 @@ export default function ForgotPassword() {
             <div className="mt-6 text-center">
               <p className="text-sm text-slate-500">
                 Remember your password?{' '}
-                <Link to="/signin" className="font-medium text-primary hover:text-indigo-600">
+                <Link to="/signin" className="font-medium text-[#4F46E5] hover:text-indigo-600">
                   Sign in here
                 </Link>
               </p>

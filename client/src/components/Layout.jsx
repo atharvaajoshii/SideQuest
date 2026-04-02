@@ -66,7 +66,7 @@ export default function Layout() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          height: 56,
+          height: 68,
           position: 'sticky',
           top: 0,
           zIndex: 100,

@@ -1,115 +1,245 @@
 import { Link } from 'react-router-dom';
-import { Shield, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
 export default function AuthHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="p-2 bg-gradient-to-br from-primary to-indigo-600 rounded-xl shadow-md group-hover:shadow-lg transition-shadow">
-              <Shield size={28} className="text-white" />
-            </div>
-            <div>
-              <span className="text-xl font-bold bg-gradient-to-r from-slate-900 to-indigo-900 bg-clip-text text-transparent">
-                SideQuest
-              </span>
-              <p className="text-xs text-slate-500 -mt-1">Student Marketplace</p>
-            </div>
-          </Link>
+    <>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap');`}</style>
+      <header style={{
+        background: '#1A1A2E',
+        padding: '0 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: 68,
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
+        {/* Logo */}
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <span style={{
+            fontFamily: "'Syne', sans-serif",
+            fontWeight: 800,
+            fontSize: 20,
+            color: '#FFD93D',
+            letterSpacing: -0.5,
+          }}>
+            SideQuest<span style={{ color: '#fff' }}>.</span>
+          </span>
+        </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-2">
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-2">
+          <Link
+            to="/"
+            style={{
+              color: 'rgba(255,255,255,0.6)',
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 500,
+              fontSize: 14,
+              textDecoration: 'none',
+              padding: '6px 14px',
+              borderRadius: 100,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#FFD93D'; e.currentTarget.style.background = 'rgba(255,217,61,0.12)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = 'transparent'; }}
+          >
+            Home
+          </Link>
+          <Link
+            to="/about"
+            style={{
+              color: 'rgba(255,255,255,0.6)',
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 500,
+              fontSize: 14,
+              textDecoration: 'none',
+              padding: '6px 14px',
+              borderRadius: 100,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#FFD93D'; e.currentTarget.style.background = 'rgba(255,217,61,0.12)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = 'transparent'; }}
+          >
+            About
+          </Link>
+          <Link
+            to="/contact"
+            style={{
+              color: 'rgba(255,255,255,0.6)',
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 500,
+              fontSize: 14,
+              textDecoration: 'none',
+              padding: '6px 14px',
+              borderRadius: 100,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#FFD93D'; e.currentTarget.style.background = 'rgba(255,217,61,0.12)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = 'transparent'; }}
+          >
+            Contact
+          </Link>
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} />
+          <Link
+            to="/signin"
+            style={{
+              color: '#FFD93D',
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 700,
+              fontSize: 14,
+              textDecoration: 'none',
+              padding: '6px 14px',
+              borderRadius: 100,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,217,61,0.12)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            Sign In
+          </Link>
+          <Link
+            to="/signup"
+            style={{ textDecoration: 'none' }}
+          >
+            <button style={{
+              background: '#FFD93D',
+              color: '#1A1A2E',
+              border: 'none',
+              borderRadius: 100,
+              padding: '7px 16px',
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: 'pointer',
+              transition: 'background 0.15s',
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = '#e6c235'}
+              onMouseLeave={e => e.currentTarget.style.background = '#FFD93D'}
+            >
+              Get Started
+            </button>
+          </Link>
+        </nav>
+
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </header>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden py-4 border-t border-white/10" style={{ background: '#1A1A2E' }}>
+          <nav className="flex flex-col gap-2">
             <Link
               to="/"
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-primary rounded-lg hover:bg-slate-50 transition-all"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 500,
+                fontSize: 14,
+                textDecoration: 'none',
+                padding: '12px 16px',
+                borderRadius: 8,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#FFD93D'; e.currentTarget.style.background = 'rgba(255,217,61,0.12)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = 'transparent'; }}
             >
               Home
             </Link>
             <Link
               to="/about"
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-primary rounded-lg hover:bg-slate-50 transition-all"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 500,
+                fontSize: 14,
+                textDecoration: 'none',
+                padding: '12px 16px',
+                borderRadius: 8,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#FFD93D'; e.currentTarget.style.background = 'rgba(255,217,61,0.12)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = 'transparent'; }}
             >
               About
             </Link>
             <Link
               to="/contact"
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-primary rounded-lg hover:bg-slate-50 transition-all"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 500,
+                fontSize: 14,
+                textDecoration: 'none',
+                padding: '12px 16px',
+                borderRadius: 8,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#FFD93D'; e.currentTarget.style.background = 'rgba(255,217,61,0.12)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = 'transparent'; }}
             >
               Contact
             </Link>
-            <div className="w-px h-6 bg-slate-200 mx-2" />
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
             <Link
               to="/signin"
-              className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-primary rounded-lg hover:bg-slate-50 transition-all"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                color: '#FFD93D',
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 700,
+                fontSize: 14,
+                textDecoration: 'none',
+                padding: '12px 16px',
+                borderRadius: 8,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,217,61,0.12)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
             >
               Sign In
             </Link>
             <Link
               to="/signup"
-              className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-slate-900 to-indigo-900 rounded-lg hover:from-slate-800 hover:to-indigo-800 transition-all shadow-md hover:shadow-lg"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ textDecoration: 'none' }}
             >
-              Get Started
-            </Link>
-          </nav>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-slate-200">
-            <nav className="flex flex-col gap-2">
-              <Link
-                to="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 text-sm font-medium text-slate-600 hover:text-primary hover:bg-slate-50 rounded-lg transition-all"
-              >
-                Home
-              </Link>
-              <Link
-                to="/about"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 text-sm font-medium text-slate-600 hover:text-primary hover:bg-slate-50 rounded-lg transition-all"
-              >
-                About
-              </Link>
-              <Link
-                to="/contact"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 text-sm font-medium text-slate-600 hover:text-primary hover:bg-slate-50 rounded-lg transition-all"
-              >
-                Contact
-              </Link>
-              <div className="h-px bg-slate-200 my-2" />
-              <Link
-                to="/signin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 text-sm font-medium text-slate-700 hover:text-primary hover:bg-slate-50 rounded-lg transition-all"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/signup"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 text-sm font-bold text-white bg-gradient-to-r from-slate-900 to-indigo-900 rounded-lg hover:from-slate-800 hover:to-indigo-800 transition-all text-center"
+              <button style={{
+                width: '100%',
+                background: '#FFD93D',
+                color: '#1A1A2E',
+                border: 'none',
+                borderRadius: 100,
+                padding: '12px 16px',
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = '#e6c235'}
+                onMouseLeave={e => e.currentTarget.style.background = '#FFD93D'}
               >
                 Get Started
-              </Link>
-            </nav>
-          </div>
-        )}
-      </div>
-    </header>
+              </button>
+            </Link>
+          </nav>
+        </div>
+      )}
+    </>
   );
 }

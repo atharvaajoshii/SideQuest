@@ -69,6 +69,7 @@ export default function Negotiation() {
           receiver_id: task.poster_id,
           content: message,
           negotiation_id: negotiation?.id || null,
+          task_id: parseInt(taskId),
         }),
       });
 
