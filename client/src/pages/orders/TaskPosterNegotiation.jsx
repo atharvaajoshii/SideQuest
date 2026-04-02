@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Send, User, Loader2, CheckCircle, DollarSign } from 'lucide-react';
+import { MessageSquare, DollarSign, CheckCircle, X, Loader2, Send } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL;
 
-export default function Negotiation() {
+export default function TaskPosterNegotiation() {
   const { id: taskId } = useParams();
   const navigate = useNavigate();
   const { user, token, API } = useAuth();
 
   const [task, setTask] = useState(null);
   const [negotiation, setNegotiation] = useState(null);
-  const [offer, setOffer] = useState('');
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [counterOffer, setCounterOffer] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,7 +27,6 @@ export default function Negotiation() {
         if (taskRes.ok) {
           const taskData = await taskRes.json();
           setTask(taskData);
-          setOffer(taskData.price);
 
           // Fetch or create negotiation
           const negRes = await fetch(`${API}/api/negotiations/task/${taskId}`, {
@@ -38,6 +37,13 @@ export default function Negotiation() {
             setNegotiation(negData.negotiation);
             if (negData.messages) {
               setMessages(negData.messages);
+              // Find latest counter-offer from messages
+              const latestOffer = negData.messages
+                .filter(m => m.offered_price)
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+              if (latestOffer) {
+                setCounterOffer(parseFloat(latestOffer.offered_price));
+              }
             }
           }
         } else {
@@ -66,11 +72,9 @@ export default function Negotiation() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          receiver_id: task.poster_id,
+          receiver_id: negotiation?.freelancer_id,
           content: message,
           negotiation_id: negotiation?.id || null,
-          task_id: parseInt(taskId),
-          offered_price: offer ? parseFloat(offer) : null,
         }),
       });
 
@@ -91,34 +95,38 @@ export default function Negotiation() {
   };
 
   const handleAcceptOffer = async () => {
-    if (!offer || parseFloat(offer) <= 0) {
-      alert('Please enter a valid offer amount');
+    if (!counterOffer) {
+      alert('No counter-offer to accept');
       return;
     }
 
     setAccepting(true);
     try {
-      // Create order from negotiation
-      const res = await fetch(`${API}/api/orders`, {
+      const res = await fetch(`${API}/api/tasks/update-price`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          freelancer_id: user.id,
-          task_id: parseInt(taskId),
-          agreed_price: parseFloat(offer),
+          taskId: parseInt(taskId),
+          newPrice: counterOffer,
+          freelancerId: negotiation?.freelancer_id,
         }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        alert('Offer accepted! Starting order now...');
-        navigate(`/orders/${data.order.id}`);
+        alert('Offer accepted! The task price has been updated.');
+        // Refresh task data
+        const taskRes = await fetch(`${API}/api/tasks/${taskId}`);
+        if (taskRes.ok) {
+          const updatedTask = await taskRes.json();
+          setTask(updatedTask);
+        }
       } else {
-        alert(data.message || 'Failed to create order');
+        alert(data.message || 'Failed to accept offer');
       }
     } catch (err) {
       console.error('Failed to accept offer:', err);
@@ -147,32 +155,36 @@ export default function Negotiation() {
     );
   }
 
+  // Get freelancer info from messages
+  const freelancerId = negotiation?.freelancer_id;
+  const freelancerName = messages.find(m => m.sender_id === freelancerId)?.sender_name || 'Freelancer';
+
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto h-[80vh] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
 
         {/* Chat Header */}
         <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <Link to={`/freelancer/${task.poster_id}`} className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <div className="h-10 w-10 bg-gradient-to-br from-primary to-indigo-600 rounded-full flex items-center justify-center font-bold text-white">
-              {task.poster_name?.charAt(0) || 'P'}
+              {freelancerName?.charAt(0) || 'F'}
             </div>
             <div>
-              <h3 className="font-bold text-slate-900">{task.poster_name || 'Task Poster'}</h3>
+              <h3 className="font-bold text-slate-900">{freelancerName}</h3>
               <p className="text-xs text-slate-500">Task: {task.title}</p>
             </div>
-          </Link>
+          </div>
           <div className="text-right">
-            <span className="text-sm text-slate-500 block">Your Offer</span>
-            <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-500 block">Current Price</span>
+            <div className="flex items-center gap-2 justify-end">
               <DollarSign size={20} className="text-secondary" />
-              <input
-                type="number"
-                value={offer}
-                onChange={(e) => setOffer(e.target.value)}
-                className="text-xl font-extrabold text-secondary w-24 text-right bg-transparent border-b-2 border-slate-300 focus:outline-none focus:border-primary"
-              />
+              <span className="text-2xl font-extrabold text-secondary">{task.price}</span>
             </div>
+            {counterOffer && counterOffer !== parseFloat(task.price) && (
+              <p className="text-xs text-green-600 font-medium mt-1">
+                Counter-offer: ₹{counterOffer}
+              </p>
+            )}
           </div>
         </div>
 
@@ -181,7 +193,7 @@ export default function Negotiation() {
           {messages.length === 0 ? (
             <div className="text-center text-slate-500 py-8">
               <p className="text-sm">No messages yet. Start the negotiation!</p>
-              <p className="text-xs mt-1">Discuss task details, timeline, or price with the poster.</p>
+              <p className="text-xs mt-1">Discuss task details, timeline, or price with the freelancer.</p>
             </div>
           ) : (
             messages.map((msg, idx) => {
@@ -191,12 +203,17 @@ export default function Negotiation() {
                   <div className={`h-8 w-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${
                     isOwn ? 'bg-slate-900 text-white' : 'bg-indigo-100 text-indigo-600'
                   }`}>
-                    {isOwn ? (user?.name?.charAt(0) || 'U') : (task.poster_name?.charAt(0) || 'P')}
+                    {isOwn ? (user?.name?.charAt(0) || 'U') : (freelancerName?.charAt(0) || 'F')}
                   </div>
                   <div className={`max-w-md px-4 py-3 rounded-2xl shadow-sm ${
                     isOwn ? 'bg-slate-900 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
                   }`}>
                     <p className="text-sm">{msg.content}</p>
+                    {msg.offered_price && (
+                      <div className="mt-2 inline-block px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-bold">
+                        Offer: ₹{msg.offered_price}
+                      </div>
+                    )}
                     <p className={`text-xs mt-1 ${isOwn ? 'text-slate-300' : 'text-slate-500'}`}>
                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -206,29 +223,31 @@ export default function Negotiation() {
             })
           )}
 
-          {/* System Offer Card */}
-          <div className="mx-auto bg-white border-2 border-green-500 rounded-xl p-4 max-w-sm text-center shadow-md my-6">
-            <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Official Offer</span>
-            <h2 className="text-3xl font-extrabold text-slate-900 my-2">₹{offer}</h2>
-            <p className="text-sm text-slate-500 mb-4">You're offering to complete the task for this amount.</p>
-            <button
-              onClick={handleAcceptOffer}
-              disabled={accepting || task.status !== 'Open'}
-              className="w-full bg-green-500 text-white py-3 rounded-lg font-bold hover:bg-green-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {accepting ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Creating Order...
-                </>
-              ) : (
-                <>
-                  <CheckCircle size={18} />
-                  {task.status !== 'Open' ? 'Task Not Available' : 'Accept Offer & Start Order'}
-                </>
-              )}
-            </button>
-          </div>
+          {/* Counter-Offer Card */}
+          {counterOffer && counterOffer !== parseFloat(task.price) && (
+            <div className="mx-auto bg-white border-2 border-green-500 rounded-xl p-4 max-w-sm text-center shadow-md my-6">
+              <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Counter-Offer</span>
+              <h2 className="text-3xl font-extrabold text-slate-900 my-2">₹{counterOffer}</h2>
+              <p className="text-sm text-slate-500 mb-4">{freelancerName} has offered this amount for the task.</p>
+              <button
+                onClick={handleAcceptOffer}
+                disabled={accepting || task.status !== 'Open'}
+                className="w-full bg-green-500 text-white py-3 rounded-lg font-bold hover:bg-green-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-2"
+              >
+                {accepting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Updating Price...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={18} />
+                    {task.status !== 'Open' ? 'Task Not Available' : 'Accept Offer & Update Price'}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Input Area */}
@@ -237,7 +256,7 @@ export default function Negotiation() {
             <input
               type="text"
               className="flex-grow px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary text-sm"
-              placeholder="Type a message or counter-offer..."
+              placeholder="Type a message..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />

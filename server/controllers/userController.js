@@ -1,5 +1,20 @@
 const pool = require('../config/db');
 
+// GET PLATFORM SETTINGS (public)
+exports.getPlatformSettings = async (req, res) => {
+  try {
+    const settings = await pool.query('SELECT * FROM settings LIMIT 1');
+    res.json(settings.rows[0] || {
+      platform_fee_percent: 5,
+      allow_signups: true,
+      maintenance_mode: false
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 // GET USER PROFILE BY ID
 exports.getUserById = async (req, res) => {
   try {

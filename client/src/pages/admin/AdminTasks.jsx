@@ -11,6 +11,10 @@ export default function AdminTasks() {
   const [search, setSearch] = useState('');
   const [filtered, setFiltered] = useState([]);
 
+  if (user?.role !== 'admin') {
+    return <p>Access denied</p>;
+  }
+
   useEffect(() => {
     fetchTasks();
   }, []);

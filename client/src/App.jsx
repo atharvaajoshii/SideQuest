@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { useSettings } from './context/SettingsContext';
 
 import Layout from './components/Layout';
 import Landing from './pages/Landing';
@@ -19,6 +20,7 @@ import FreelancerProfile from './pages/profile/FreelancerProfile';
 import OrderPage from './pages/orders/OrderPage';
 import OrderDetail from './pages/orders/OrderDetail';
 import Negotiation from './pages/orders/Negotiation';
+import TaskPosterNegotiation from './pages/orders/TaskPosterNegotiation';
 import Wallet from './pages/wallet/Wallet';
 import AdminLayout from './components/AdminLayout';
 import AdminHome from './pages/admin/AdminHome';
@@ -36,12 +38,27 @@ import Notifications from './pages/Notifications';
 
 // Blocks logged-out users from accessing app pages
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return (
+  const { user, loading: authLoading } = useAuth();
+  const { settings, loading: settingsLoading } = useSettings();
+
+  if (authLoading || settingsLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <p className="text-slate-500 font-medium">Loading...</p>
     </div>
   );
+
+  // Check maintenance mode (admin can still access admin panel)
+  if (settings.maintenance_mode && user?.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="max-w-md text-center">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Maintenance Mode</h1>
+          <p className="text-slate-500">The platform is currently under maintenance. Please check back later.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) return <Navigate to="/signin" replace />;
   return children;
 }
@@ -81,6 +98,7 @@ function App() {
           <Route path="/orders" element={<OrderPage />} />
           <Route path="/orders/:orderId" element={<OrderDetail />} />
           <Route path="/negotiate/:id" element={<Negotiation />} />
+          <Route path="/negotiate-poster/:id" element={<TaskPosterNegotiation />} />
           <Route path="/wallet" element={<Wallet />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:userId" element={<MessageDetail />} />

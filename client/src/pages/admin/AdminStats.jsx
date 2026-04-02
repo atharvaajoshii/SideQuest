@@ -8,6 +8,10 @@ export default function AdminStats() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
 
+  if (user?.role !== 'admin') {
+    return <p>Access denied</p>;
+  }
+
   useEffect(() => {
     fetchStats();
   }, []);

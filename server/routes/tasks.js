@@ -30,4 +30,7 @@ router.delete('/:id', authMiddleware, taskController.deleteTask);
 // Toggle task visibility (protected, must own task)
 router.patch('/:id/visibility', authMiddleware, taskController.toggleTaskVisibility);
 
+// Update task price from negotiation (protected, must own task)
+router.post('/update-price', authMiddleware, taskController.updateTaskPriceFromNegotiation);
+
 module.exports = router;

@@ -19,6 +19,10 @@ export default function AdminProfile() {
   // FIX: fetch real admin activity stats instead of hardcoding
   const [adminStats, setAdminStats] = useState(null);
 
+  if (user?.role !== 'admin') {
+    return <p>Access denied</p>;
+  }
+
   useEffect(() => {
     if (!token) return;
     fetch(`${API}/api/admin/stats`, {

@@ -15,6 +15,13 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    // Check if signups are allowed
+    const settingsResult = await pool.query('SELECT allow_signups FROM settings LIMIT 1');
+    const settings = settingsResult.rows[0];
+    if (!settings || !settings.allow_signups) {
+      return res.status(403).json({ message: 'Registration is currently disabled' });
+    }
+
     const userCheck = await pool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
@@ -60,6 +67,17 @@ exports.login = async (req, res) => {
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Check maintenance mode (allow admin to login)
+    const settingsResult = await pool.query('SELECT maintenance_mode FROM settings LIMIT 1');
+    const settings = settingsResult.rows[0];
+    if (settings && settings.maintenance_mode) {
+      // Check if user is admin - allow admin login during maintenance
+      const userCheck = await pool.query('SELECT role FROM users WHERE email = $1', [email]);
+      if (userCheck.rows.length > 0 && userCheck.rows[0].role !== 'admin') {
+        return res.status(403).json({ message: 'The platform is currently under maintenance. Please try again later.' });
+      }
     }
 
     const userResult = await pool.query(

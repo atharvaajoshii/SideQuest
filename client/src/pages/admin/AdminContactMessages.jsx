@@ -14,6 +14,10 @@ export default function AdminContactMessages() {
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
 
+  if (user?.role !== 'admin') {
+    return <p>Access denied</p>;
+  }
+
   useEffect(() => {
     fetchMessages();
     fetchStats();

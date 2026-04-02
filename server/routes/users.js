@@ -3,6 +3,9 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
 
+// GET /api/users/settings - Get platform settings (public)
+router.get('/settings', userController.getPlatformSettings);
+
 // GET /api/users/me - Get current user profile (protected)
 router.get('/me', authMiddleware, userController.getCurrentUser);
 

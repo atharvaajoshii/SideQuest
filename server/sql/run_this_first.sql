@@ -46,5 +46,8 @@ DELETE FROM users WHERE email IN ('test@test.com', 'rahul@test.com', 'priya@test
 -- Verify tables were created
 SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('password_resets', 'contact_messages');
 
+-- 4. Add offered_price column to messages table (for negotiations)
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS offered_price DECIMAL(10,2);
+
 -- Show remaining users
 SELECT id, name, email, role FROM users ORDER BY id;

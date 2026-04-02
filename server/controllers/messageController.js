@@ -90,7 +90,7 @@ exports.getMessages = async (req, res) => {
 exports.sendMessage = async (req, res) => {
   try {
     const senderId = req.user.id;
-    const { receiver_id, content, order_id, negotiation_id, reply_to } = req.body;
+    const { receiver_id, content, order_id, negotiation_id, reply_to, offered_price } = req.body;
 
     if (!receiver_id || !content) {
       return res.status(400).json({ message: 'Receiver ID and content are required' });
@@ -108,6 +108,32 @@ exports.sendMessage = async (req, res) => {
       negotiation_id || null,
       reply_to || null
     ]);
+
+    // If this is a negotiation message with an offered price, send notification
+    if (negotiation_id && offered_price) {
+      // Get task details to find the poster
+      const taskResult = await pool.query(`
+        SELECT t.poster_id, t.title, u.name as freelancer_name
+        FROM negotiations n
+        JOIN tasks t ON n.task_id = t.id
+        JOIN users u ON u.id = $1
+        WHERE n.id = $2
+      `, [senderId, negotiation_id]);
+
+      if (taskResult.rows.length > 0) {
+        const { poster_id, title, freelancer_name } = taskResult.rows[0];
+
+        // Create notification for task poster
+        await pool.query(`
+          INSERT INTO notifications (user_id, title, message, type)
+          VALUES ($1, $2, $3, 'negotiation')
+        `, [
+          poster_id,
+          'New Counter-Offer',
+          `${freelancer_name} offered ₹${offered_price} for "${title}"`
+        ]);
+      }
+    }
 
     res.status(201).json({ message: newMessage.rows[0] });
   } catch (err) {

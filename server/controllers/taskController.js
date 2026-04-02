@@ -196,3 +196,49 @@ exports.toggleTaskVisibility = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
+
+// UPDATE TASK PRICE FROM NEGOTIATION (poster accepts counter-offer)
+exports.updateTaskPriceFromNegotiation = async (req, res) => {
+  try {
+    const { taskId, newPrice, freelancerId } = req.body;
+
+    if (!taskId || !newPrice || !freelancerId) {
+      return res.status(400).json({ message: 'Task ID, new price, and freelancer ID are required' });
+    }
+
+    // Verify user owns the task
+    const taskCheck = await pool.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
+    if (taskCheck.rows.length === 0) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    if (taskCheck.rows[0].poster_id !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to update this task' });
+    }
+
+    // Update task price
+    const updated = await pool.query(
+      'UPDATE tasks SET price=$1, updated_at=NOW() WHERE id=$2 RETURNING *',
+      [newPrice, taskId]
+    );
+
+    // Get freelancer name for notification
+    const freelancerResult = await pool.query('SELECT name FROM users WHERE id = $1', [freelancerId]);
+    const freelancerName = freelancerResult.rows[0]?.name || 'Freelancer';
+
+    // Create notification for freelancer
+    await pool.query(
+      `INSERT INTO notifications (user_id, title, message, type)
+       VALUES ($1, $2, $3, 'negotiation')`,
+      [
+        freelancerId,
+        'Offer Accepted',
+        `The poster updated the price for "${taskCheck.rows[0].title}" to ₹${newPrice}`
+      ]
+    );
+
+    res.json({ message: 'Task price updated successfully', task: updated.rows[0] });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
