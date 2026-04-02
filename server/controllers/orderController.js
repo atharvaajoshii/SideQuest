@@ -129,26 +129,97 @@ exports.getOrderById = async (req, res) => {
 
 exports.markOrderCompleted = async (req, res) => {
   try {
-    const { id } = req.params; // ✅ was orderId
+    const { id } = req.params;
     const userId = req.user.id;
+
+    console.log(`[markOrderCompleted] Order ID: ${id}, User ID: ${userId}`);
 
     const orderCheck = await pool.query(
       'SELECT * FROM orders WHERE id = $1 AND poster_id = $2',
-      [id, userId] // ✅ was orderId
+      [id, userId]
     );
 
     if (orderCheck.rows.length === 0) {
+      console.log(`[markOrderCompleted] Order not found or user not authorized`);
       return res.status(404).json({ message: 'Order not found or you are not the client' });
     }
 
-    const updatedOrder = await pool.query(
-      'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-      ['completed', id] // ✅ was orderId
+    const order = orderCheck.rows[0];
+    console.log(`[markOrderCompleted] Order found:`, order);
+
+    // Check if order is already completed
+    if (order.status === 'completed') {
+      console.log(`[markOrderCompleted] Order already completed`);
+      return res.status(400).json({ message: 'Order is already completed' });
+    }
+
+    const client = await pool.query('SELECT * FROM users WHERE id = $1', [order.poster_id]);
+    const freelancer = await pool.query('SELECT * FROM users WHERE id = $1', [order.freelancer_id]);
+
+    if (client.rows.length === 0 || freelancer.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const clientBalance = parseFloat(client.rows[0].wallet_balance || 0);
+    const freelancerBalance = parseFloat(freelancer.rows[0].wallet_balance || 0);
+    const agreedPrice = parseFloat(order.agreed_price);
+
+    console.log(`[markOrderCompleted] Client balance: ${clientBalance}, Freelancer balance: ${freelancerBalance}, Agreed price: ${agreedPrice}`);
+
+    // Check if client has enough balance
+    if (clientBalance < agreedPrice) {
+      console.log(`[markOrderCompleted] Insufficient balance: ${clientBalance} < ${agreedPrice}`);
+      return res.status(400).json({
+        message: `Client does not have enough wallet balance. Required: ₹${agreedPrice}, Available: ₹${clientBalance}`
+      });
+    }
+
+    const newClientBalance = clientBalance - agreedPrice;
+    const newFreelancerBalance = freelancerBalance + agreedPrice;
+
+    console.log(`[markOrderCompleted] Updating balances: Client ${clientBalance} -> ${newClientBalance}, Freelancer ${freelancerBalance} -> ${newFreelancerBalance}`);
+
+    await pool.query('UPDATE users SET wallet_balance = $1 WHERE id = $2', [newClientBalance, order.poster_id]);
+    await pool.query('UPDATE users SET wallet_balance = $1 WHERE id = $2', [newFreelancerBalance, order.freelancer_id]);
+
+    // Create transaction record for freelancer (earned)
+    await pool.query(
+      `INSERT INTO transactions (user_id, amount, type, description, reference_id, reference_type, status)
+       VALUES ($1, $2, 'earned', 'Completed task: Payment received', $3, 'order', 'completed')`,
+      [order.freelancer_id, agreedPrice, order.id]
     );
 
-    res.json({ order: updatedOrder.rows[0], message: 'Order marked as completed' });
+    // Create transaction record for client (spent)
+    await pool.query(
+      `INSERT INTO transactions (user_id, amount, type, description, reference_id, reference_type, status)
+       VALUES ($1, $2, 'spent', 'Payment for task completion', $3, 'order', 'completed')`,
+      [order.poster_id, agreedPrice, order.id]
+    );
+
+    const updatedOrder = await pool.query(
+      'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      ['completed', id]
+    );
+
+    // Create notification for freelancer
+    await pool.query(
+      `INSERT INTO notifications (user_id, title, message, type, link)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [order.freelancer_id, 'Task Completed', `Your task "${order.task_title || 'Task'}" has been marked as completed. ₹${agreedPrice} has been added to your wallet.`, 'order', `/orders/${id}`]
+    );
+
+    // Create notification for client
+    await pool.query(
+      `INSERT INTO notifications (user_id, title, message, type, link)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [order.poster_id, 'Quest Completed', `Your quest "${order.task_title || 'Task'}" has been completed by ${freelancer.rows[0].name}.`, 'order', `/orders/${id}`]
+    );
+
+    console.log(`[markOrderCompleted] Success! Order ${id} marked as completed`);
+
+    res.json({ order: updatedOrder.rows[0], message: 'Order marked as completed. Payment transferred to freelancer.' });
   } catch (err) {
-    console.error(err.message);
+    console.error('[markOrderCompleted] Error:', err.message);
     res.status(500).send('Server Error');
   }
 };

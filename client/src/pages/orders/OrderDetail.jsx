@@ -38,12 +38,16 @@ export default function OrderDetail() {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
+      const data = await res.json();
       if (res.ok) {
         alert('Order marked as completed!');
         fetchOrder();
+      } else {
+        alert('Error: ' + (data.message || 'Failed to complete order'));
       }
     } catch (err) {
       console.error('Failed to mark order as completed:', err);
+      alert('Failed to complete order. Please try again.');
     }
   };
 

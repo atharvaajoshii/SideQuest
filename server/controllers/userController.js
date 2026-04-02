@@ -53,6 +53,19 @@ exports.getCurrentUser = async (req, res) => {
   }
 };
 
+exports.getTransactions = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 // UPDATE CURRENT USER
 exports.updateCurrentUser = async (req, res) => {
   try {
@@ -218,6 +231,24 @@ exports.getUserStats = async (req, res) => {
       active: parseInt(activeUsers.rows[0].count),
       admins: parseInt(adminUsers.rows[0].count),
     });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// GET USER TRANSACTIONS (protected)
+exports.getUserTransactions = async (req, res) => {
+  try {
+    const transactions = await pool.query(
+      `SELECT * FROM transactions
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [req.user.id]
+    );
+
+    res.json(transactions.rows);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

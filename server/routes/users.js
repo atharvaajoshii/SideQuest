@@ -18,6 +18,9 @@ router.post('/change-password', authMiddleware, userController.changePassword);
 // GET /api/users/stats - Get user statistics (protected, admin)
 router.get('/stats', authMiddleware, userController.getUserStats);
 
+// GET /api/users/transactions - Get user transactions (protected)
+router.get('/transactions', authMiddleware, userController.getUserTransactions);
+
 // GET /api/users - Get all users (protected, admin)
 router.get('/', authMiddleware, userController.getAllUsers);
 
@@ -32,5 +35,7 @@ router.put('/:id/toggle-status', authMiddleware, userController.toggleUserStatus
 
 // DELETE /api/users/:id - Delete user (protected, admin)
 router.delete('/:id', authMiddleware, userController.deleteUser);
+
+router.get('/transactions', authMiddleware, userController.getTransactions);
 
 module.exports = router;
