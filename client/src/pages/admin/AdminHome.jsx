@@ -15,18 +15,7 @@ export default function AdminHome() {
   const [recentUsers, setRecentUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-<<<<<<< Updated upstream
-=======
-  // ✅ Prevent crash when user is not yet loaded
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin" size={40} />
-      </div>
-    );
-  }
 
->>>>>>> Stashed changes
   useEffect(() => {
     fetchStats();
   }, [token, API]);

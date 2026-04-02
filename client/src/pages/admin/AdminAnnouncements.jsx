@@ -9,11 +9,6 @@ export default function AdminAnnouncements() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-<<<<<<< Updated upstream
-=======
-
-
->>>>>>> Stashed changes
   useEffect(() => {
     fetchAnnouncements();
   }, []);

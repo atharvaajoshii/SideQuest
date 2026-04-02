@@ -12,10 +12,7 @@ export default function AdminReports() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
   useEffect(() => {
     fetchReports();
   }, [filter]);
