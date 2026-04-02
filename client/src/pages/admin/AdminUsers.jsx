@@ -13,10 +13,6 @@ export default function AdminUsers() {
   const [search, setSearch] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  if (user?.role !== 'admin') {
-    return <p>Access denied</p>;
-  }
-
   useEffect(() => {
     fetchUsers();
   }, [searchTerm]);

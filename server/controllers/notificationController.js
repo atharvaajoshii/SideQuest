@@ -1,17 +1,16 @@
 const pool = require('../config/db');
 
-// Get all notifications for a user (only announcements)
+// Get all notifications for a user
 exports.getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Only fetch announcements (type = 'announcement')
     const notifications = await pool.query(`
       SELECT * FROM notifications
-      WHERE type = 'announcement'
+      WHERE user_id = $1
       ORDER BY created_at DESC
       LIMIT 50
-    `, []);
+    `, [userId]);
 
     res.json({ notifications: notifications.rows });
   } catch (err) {
@@ -67,7 +66,7 @@ exports.getUnreadCount = async (req, res) => {
       WHERE user_id = $1 AND is_read = FALSE
     `, [userId]);
 
-    res.json({ unreadCount: parseInt(result.rows[0].unread_count) });
+    res.json({ count: parseInt(result.rows[0].unread_count) });
   } catch (err) {
     console.error('❌ GET UNREAD COUNT ERROR:', err);
     res.status(500).json({ error: err.message });

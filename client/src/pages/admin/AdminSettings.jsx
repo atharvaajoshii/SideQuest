@@ -13,10 +13,6 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  if (user?.role !== 'admin') {
-    return <p>Access denied</p>;
-  }
-
   useEffect(() => {
     fetchSettings();
   }, []);

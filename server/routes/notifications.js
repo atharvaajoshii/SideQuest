@@ -12,10 +12,10 @@ router.get('/', notificationController.getNotifications);
 // GET /api/notifications/unread-count - Get unread count
 router.get('/unread-count', notificationController.getUnreadCount);
 
+// PUT /api/notifications/read-all - Mark all notifications as read (MUST be before /:id/read)
+router.put('/read-all', notificationController.markAllAsRead);
+
 // PUT /api/notifications/:id/read - Mark a notification as read
 router.put('/:id/read', notificationController.markNotificationAsRead);
-
-// PUT /api/notifications/read-all - Mark all notifications as read
-router.put('/read-all', notificationController.markAllAsRead);
 
 module.exports = router;

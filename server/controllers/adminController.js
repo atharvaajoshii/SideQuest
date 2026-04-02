@@ -27,7 +27,7 @@ exports.getAllUsers = async (req, res) => {
     let query = 'SELECT id, name, email, role, wallet_balance, is_suspended, created_at FROM users';
 
     if (search) {
-      query += " WHERE name ILIKE $1 OR email ILIKE $1";
+      query += " WHERE name ILIKE $1 OR email ILIKE $1 ORDER BY created_at DESC";
       const users = await pool.query(query, [`%${search}%`]);
       return res.json(users.rows);
     }
@@ -161,7 +161,7 @@ exports.resolveReport = async (req, res) => {
 
     // If action is ban/suspend, handle it
     if (action === 'ban_user') {
-      const report = await pool.query('SELECT target_id FROM reports WHERE id = $1', [reportId]);
+      const report = await pool.query('SELECT target_id, type FROM reports WHERE id = $1', [reportId]);
       if (report.rows.length > 0 && report.rows[0].type === 'user') {
         await pool.query('UPDATE users SET is_suspended = true WHERE id = $1', [report.rows[0].target_id]);
       }

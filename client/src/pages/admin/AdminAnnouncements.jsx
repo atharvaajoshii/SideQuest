@@ -9,10 +9,6 @@ export default function AdminAnnouncements() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  if (user?.role !== 'admin') {
-    return <p>Access denied</p>;
-  }
-
   useEffect(() => {
     fetchAnnouncements();
   }, []);

@@ -12,10 +12,6 @@ export default function AdminReports() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  if (user?.role !== 'admin') {
-    return <p>Access denied</p>;
-  }
-
   useEffect(() => {
     fetchReports();
   }, [filter]);

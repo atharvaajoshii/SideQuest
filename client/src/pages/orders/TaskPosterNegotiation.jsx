@@ -1,147 +1,234 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { MessageSquare, DollarSign, CheckCircle, X, Loader2, Send } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL;
+import {
+  Send, Loader2, CheckCircle, IndianRupee, ArrowLeft,
+  Users, MessageSquare, PenLine, RotateCcw, ChevronRight, X
+} from 'lucide-react';
 
 export default function TaskPosterNegotiation() {
   const { id: taskId } = useParams();
   const navigate = useNavigate();
   const { user, token, API } = useAuth();
+  const messagesEndRef = useRef(null);
 
-  const [task, setTask] = useState(null);
+  // ── Data state ──────────────────────────────────────────────────────────
+  const [task, setTask]               = useState(null);
+  const [applicants, setApplicants]   = useState([]);
+  const [selected, setSelected]       = useState(null);
+  const [messages, setMessages]       = useState([]);
   const [negotiation, setNegotiation] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [accepting, setAccepting] = useState(false);
-  const [counterOffer, setCounterOffer] = useState(null);
 
+  // ── UI state ────────────────────────────────────────────────────────────
+  const [loading, setLoading]           = useState(true);
+  const [msgLoading, setMsgLoading]     = useState(false);
+  const [submitting, setSubmitting]     = useState(false);
+  const [accepting, setAccepting]       = useState(false);
+  const [message, setMessage]           = useState('');
+  const [finalPrice, setFinalPrice]     = useState('');
+  const [editingPrice, setEditingPrice] = useState(false);
+  const [priceInput, setPriceInput]     = useState('');
+  const [successMsg, setSuccessMsg]     = useState('');
+  const [errorMsg, setErrorMsg]         = useState('');
+
+  // ── Auto-scroll ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch task details
-        const taskRes = await fetch(`${API}/api/tasks/${taskId}`);
-        if (taskRes.ok) {
-          const taskData = await taskRes.json();
-          setTask(taskData);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-          // Fetch or create negotiation
-          const negRes = await fetch(`${API}/api/negotiations/task/${taskId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (negRes.ok) {
-            const negData = await negRes.json();
-            setNegotiation(negData.negotiation);
-            if (negData.messages) {
-              setMessages(negData.messages);
-              // Find latest counter-offer from messages
-              const latestOffer = negData.messages
-                .filter(m => m.offered_price)
-                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-              if (latestOffer) {
-                setCounterOffer(parseFloat(latestOffer.offered_price));
-              }
-            }
-          }
-        } else {
-          navigate('/search');
+  // ── Initial load ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const fetchTask = async () => {
+      try {
+        const res = await fetch(`${API}/api/tasks/${taskId}`);
+        if (!res.ok) { navigate('/tasks/mine'); return; }
+        const data = await res.json();
+
+        if (data.poster_id !== user?.id) { navigate(`/tasks/${taskId}`); return; }
+
+        setTask(data);
+        setFinalPrice(data.price);
+
+        // Fetch applicants/offers for this task
+        const offersRes = await fetch(`${API}/api/orders/task/${taskId}/offers`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (offersRes.ok) {
+          const offersData = await offersRes.json();
+          setApplicants(offersData.offers || []);
         }
       } catch (err) {
-        console.error('Failed to fetch data:', err);
+        console.error('Failed to fetch task:', err);
       } finally {
         setLoading(false);
       }
     };
+    if (user) fetchTask();
+  }, [taskId, API, navigate, token, user]);
 
-    fetchData();
-  }, [taskId, API, navigate, token]);
+  // ── Load messages when applicant selected ────────────────────────────────
+  useEffect(() => {
+    if (!selected) return;
+    const load = async () => {
+      setMsgLoading(true);
+      try {
+        const negRes = await fetch(`${API}/api/negotiations/task/${taskId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (negRes.ok) {
+          const negData = await negRes.json();
+          setNegotiation(negData.negotiation);
+        }
+
+        const msgRes = await fetch(`${API}/api/messages/${selected.freelancer_id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (msgRes.ok) {
+          const msgData = await msgRes.json();
+          const msgs = msgData.messages || [];
+          setMessages(msgs);
+
+          // Pre-fill price input with freelancer's latest counter-offer
+          const latestOffer = msgs
+            .filter(m => m.sender_id === selected.freelancer_id && m.offered_price)
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+          if (latestOffer) setPriceInput(String(latestOffer.offered_price));
+        }
+      } catch (err) {
+        console.error('Failed to load messages:', err);
+      } finally {
+        setMsgLoading(false);
+      }
+    };
+    load();
+  }, [selected, taskId, API, token]);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const flash = (type, text) => {
+    if (type === 'success') { setSuccessMsg(text); setErrorMsg(''); }
+    else { setErrorMsg(text); setSuccessMsg(''); }
+    setTimeout(() => { setSuccessMsg(''); setErrorMsg(''); }, 4000);
+  };
+
+  const latestCounterOffer = messages
+    .filter(m => m.sender_id === selected?.freelancer_id && m.offered_price)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+  const fmtTime = (ts) =>
+    new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const fmtDate = (ts) => {
+    const d = new Date(ts);
+    const today = new Date();
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  const grouped = messages.reduce((acc, msg) => {
+    const key = fmtDate(msg.created_at);
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(msg);
+    return acc;
+  }, {});
+
+  // ── Actions ───────────────────────────────────────────────────────────────
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim()) return;
-
+    if (!message.trim() || !selected) return;
     setSubmitting(true);
     try {
       const res = await fetch(`${API}/api/messages`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          receiver_id: negotiation?.freelancer_id,
+          receiver_id: selected.freelancer_id,
           content: message,
           negotiation_id: negotiation?.id || null,
         }),
       });
-
       if (res.ok) {
         const data = await res.json();
-        setMessages([...messages, data.message]);
+        setMessages(prev => [...prev, data.message]);
         setMessage('');
       } else {
-        const errData = await res.json();
-        alert(errData.message || 'Failed to send message');
+        const err = await res.json();
+        flash('error', err.message || 'Failed to send message');
       }
-    } catch (err) {
-      console.error('Failed to send message:', err);
-      alert('Server error. Please try again.');
+    } catch {
+      flash('error', 'Server error. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleAcceptOffer = async () => {
-    if (!counterOffer) {
-      alert('No counter-offer to accept');
-      return;
-    }
-
+  const handleUpdatePrice = async (priceOverride, notifyFreelancer = true) => {
+    const newPrice = parseFloat(priceOverride ?? priceInput);
+    if (!newPrice || newPrice <= 0) { flash('error', 'Enter a valid price'); return; }
     setAccepting(true);
     try {
       const res = await fetch(`${API}/api/tasks/update-price`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           taskId: parseInt(taskId),
-          newPrice: counterOffer,
-          freelancerId: negotiation?.freelancer_id,
+          newPrice,
+          freelancerId: selected?.freelancer_id ?? user.id,
         }),
       });
-
       const data = await res.json();
-
       if (res.ok) {
-        alert('Offer accepted! The task price has been updated.');
-        // Refresh task data
-        const taskRes = await fetch(`${API}/api/tasks/${taskId}`);
-        if (taskRes.ok) {
-          const updatedTask = await taskRes.json();
-          setTask(updatedTask);
+        setTask(prev => ({ ...prev, price: newPrice }));
+        setFinalPrice(newPrice);
+        setEditingPrice(false);
+        flash('success', `Task price updated to ₹${newPrice}`);
+
+        // Notify the selected freelancer via message
+        if (notifyFreelancer && selected) {
+          await fetch(`${API}/api/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              receiver_id: selected.freelancer_id,
+              content: `I've set the final price to ₹${newPrice}. Let me know if you'd like to proceed!`,
+              negotiation_id: negotiation?.id || null,
+            }),
+          });
+          const msgRes = await fetch(`${API}/api/messages/${selected.freelancer_id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (msgRes.ok) {
+            const msgData = await msgRes.json();
+            setMessages(msgData.messages || []);
+          }
         }
       } else {
-        alert(data.message || 'Failed to accept offer');
+        flash('error', data.message || 'Failed to update price');
       }
-    } catch (err) {
-      console.error('Failed to accept offer:', err);
-      alert('Server error. Is backend running?');
+    } catch {
+      flash('error', 'Server error. Please try again.');
     } finally {
       setAccepting(false);
     }
   };
 
+  const handleAcceptCounterOffer = async () => {
+    if (!latestCounterOffer) return;
+    const price = parseFloat(latestCounterOffer.offered_price);
+    await handleUpdatePrice(price, true);
+    setPriceInput(String(price));
+  };
+
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <Loader2 size={40} className="animate-spin text-primary mx-auto mb-2" />
-          <p className="text-slate-500">Loading negotiation...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F6F2' }}>
+        <div style={{ textAlign: 'center' }}>
+          <Loader2 size={36} className="animate-spin" style={{ color: '#1A1A2E', margin: '0 auto 12px' }} />
+          <p style={{ color: '#64748b', fontSize: 14 }}>Loading negotiation room…</p>
         </div>
       </div>
     );
@@ -149,127 +236,356 @@ export default function TaskPosterNegotiation() {
 
   if (!task) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-slate-500">Task not found</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F6F2' }}>
+        <p style={{ color: '#64748b' }}>Task not found.</p>
       </div>
     );
   }
 
-  // Get freelancer info from messages
-  const freelancerId = negotiation?.freelancer_id;
-  const freelancerName = messages.find(m => m.sender_id === freelancerId)?.sender_name || 'Freelancer';
+  const selectedName    = selected?.freelancer_name || 'Freelancer';
+  const selectedInitial = selectedName.charAt(0).toUpperCase();
 
+  // ── Main render ───────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto h-[80vh] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <div style={{ minHeight: '100vh', background: '#F7F6F2', padding: '24px 16px' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
-        {/* Chat Header */}
-        <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-gradient-to-br from-primary to-indigo-600 rounded-full flex items-center justify-center font-bold text-white">
-              {freelancerName?.charAt(0) || 'F'}
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900">{freelancerName}</h3>
-              <p className="text-xs text-slate-500">Task: {task.title}</p>
-            </div>
+        {/* Top bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => navigate(`/tasks/${taskId}`)}
+            style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '7px 14px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer', flexShrink: 0 }}
+          >
+            <ArrowLeft size={14} /> Back to Task
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ fontSize: 18, fontWeight: 800, color: '#1A1A2E', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {task.title}
+            </h1>
+            <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>Negotiation Room · Task Poster View</p>
           </div>
-          <div className="text-right">
-            <span className="text-sm text-slate-500 block">Current Price</span>
-            <div className="flex items-center gap-2 justify-end">
-              <DollarSign size={20} className="text-secondary" />
-              <span className="text-2xl font-extrabold text-secondary">{task.price}</span>
-            </div>
-            {counterOffer && counterOffer !== parseFloat(task.price) && (
-              <p className="text-xs text-green-600 font-medium mt-1">
-                Counter-offer: ₹{counterOffer}
-              </p>
-            )}
+          <div style={{ background: '#1A1A2E', color: '#FFD93D', borderRadius: 12, padding: '7px 16px', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <IndianRupee size={14} />
+            {parseFloat(finalPrice).toFixed(0)}
+            <span style={{ color: 'rgba(255,217,61,0.55)', fontWeight: 400, fontSize: 11 }}>current price</span>
           </div>
         </div>
 
-        {/* Chat Messages */}
-        <div className="flex-grow p-6 overflow-y-auto space-y-4 bg-slate-50">
-          {messages.length === 0 ? (
-            <div className="text-center text-slate-500 py-8">
-              <p className="text-sm">No messages yet. Start the negotiation!</p>
-              <p className="text-xs mt-1">Discuss task details, timeline, or price with the freelancer.</p>
+        {/* Flash banners */}
+        {successMsg && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '10px 16px', marginBottom: 14, color: '#166534', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <CheckCircle size={15} /> {successMsg}
+          </div>
+        )}
+        {errorMsg && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 10, padding: '10px 16px', marginBottom: 14, color: '#991b1b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <X size={15} /> {errorMsg}
+          </div>
+        )}
+
+        {/* Main 2-column layout */}
+        <div style={{ display: 'grid', gridTemplateColumns: '272px 1fr', gap: 14, height: 'calc(100vh - 190px)', minHeight: 500 }}>
+
+          {/* ── Left: Applicants sidebar ─────────────────────────────── */}
+          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+            {/* Sidebar header */}
+            <div style={{ padding: '15px 18px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Users size={15} style={{ color: '#64748b' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>Applicants</span>
+              <span style={{ marginLeft: 'auto', background: '#f1f5f9', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 700, color: '#475569' }}>
+                {applicants.length}
+              </span>
+            </div>
+
+            {/* Applicant list */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {applicants.length === 0 ? (
+                <div style={{ padding: '32px 18px', textAlign: 'center' }}>
+                  <Users size={28} style={{ color: '#e2e8f0', margin: '0 auto 10px' }} />
+                  <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>No applicants yet</p>
+                  <p style={{ fontSize: 11, color: '#cbd5e1', marginTop: 4 }}>Freelancers who apply will appear here</p>
+                </div>
+              ) : (
+                applicants.map((applicant) => {
+                  const isActive  = selected?.freelancer_id === applicant.freelancer_id;
+                  const initial   = (applicant.freelancer_name || 'F').charAt(0).toUpperCase();
+                  return (
+                    <button
+                      key={applicant.freelancer_id}
+                      onClick={() => { setSelected(applicant); setMessages([]); setEditingPrice(false); }}
+                      style={{
+                        width: '100%', textAlign: 'left', padding: '11px 18px',
+                        background: isActive ? '#f8fafc' : 'transparent',
+                        borderLeft: `3px solid ${isActive ? '#FFD93D' : 'transparent'}`,
+                        border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 11,
+                        transition: 'background 0.12s',
+                      }}
+                    >
+                      <div style={{
+                        width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                        background: isActive ? '#1A1A2E' : '#e2e8f0',
+                        color: isActive ? '#FFD93D' : '#64748b',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 800,
+                      }}>{initial}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {applicant.freelancer_name || 'Freelancer'}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
+                          Offered: <span style={{ fontWeight: 700, color: '#0ea5e9' }}>₹{parseFloat(applicant.offered_price || 0).toFixed(0)}</span>
+                        </div>
+                      </div>
+                      <ChevronRight size={13} style={{ color: '#cbd5e1', flexShrink: 0 }} />
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer: quick price update (no freelancer selected) */}
+            <div style={{ padding: '14px 18px', borderTop: '1px solid #f1f5f9', background: '#fafafa' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <PenLine size={11} /> Quick Price Update
+              </p>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 13 }}>₹</span>
+                  <input
+                    type="number"
+                    value={priceInput}
+                    onChange={e => setPriceInput(e.target.value)}
+                    placeholder={String(task.price)}
+                    style={{ width: '100%', boxSizing: 'border-box', paddingLeft: 26, paddingRight: 8, paddingTop: 8, paddingBottom: 8, border: '1.5px solid #e2e8f0', borderRadius: 9, fontSize: 13, fontWeight: 700, color: '#1e293b', outline: 'none' }}
+                  />
+                </div>
+                <button
+                  onClick={() => handleUpdatePrice(undefined, !!selected)}
+                  disabled={accepting || !priceInput}
+                  style={{ background: '#1A1A2E', color: '#FFD93D', border: 'none', borderRadius: 9, padding: '8px 12px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, opacity: accepting || !priceInput ? 0.5 : 1 }}
+                >
+                  {accepting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle size={13} />}
+                  Set
+                </button>
+              </div>
+              <p style={{ fontSize: 10, color: '#cbd5e1', marginTop: 5 }}>Current: ₹{parseFloat(task.price).toFixed(2)}</p>
+            </div>
+          </div>
+
+          {/* ── Right: Chat panel ────────────────────────────────────── */}
+          {!selected ? (
+            /* Empty state */
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 48 }}>
+              <MessageSquare size={44} style={{ color: '#e2e8f0', marginBottom: 16 }} />
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>Select an applicant</h3>
+              <p style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center', maxWidth: 300, lineHeight: 1.6 }}>
+                Pick a freelancer from the sidebar to view your conversation, respond to their offers, and finalize the task price.
+              </p>
+              <Link to="/messages" style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#1A1A2E', textDecoration: 'none', background: '#f1f5f9', padding: '8px 16px', borderRadius: 10 }}>
+                <MessageSquare size={14} /> Open All Messages
+              </Link>
             </div>
           ) : (
-            messages.map((msg, idx) => {
-              const isOwn = msg.sender_id === user?.id;
-              return (
-                <div key={msg.id || idx} className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-                  <div className={`h-8 w-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${
-                    isOwn ? 'bg-slate-900 text-white' : 'bg-indigo-100 text-indigo-600'
-                  }`}>
-                    {isOwn ? (user?.name?.charAt(0) || 'U') : (freelancerName?.charAt(0) || 'F')}
-                  </div>
-                  <div className={`max-w-md px-4 py-3 rounded-2xl shadow-sm ${
-                    isOwn ? 'bg-slate-900 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
-                  }`}>
-                    <p className="text-sm">{msg.content}</p>
-                    {msg.offered_price && (
-                      <div className="mt-2 inline-block px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-bold">
-                        Offer: ₹{msg.offered_price}
-                      </div>
+            /* Chat */
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+              {/* Chat header */}
+              <div style={{ padding: '13px 20px', borderBottom: '1px solid #f1f5f9', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* Avatar + name */}
+                <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#1A1A2E', color: '#FFD93D', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, flexShrink: 0 }}>
+                  {selectedInitial}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{selectedName}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                    Applied at ₹{parseFloat(selected.offered_price || 0).toFixed(0)}
+                    {latestCounterOffer && (
+                      <span style={{ marginLeft: 8, color: '#0ea5e9', fontWeight: 600 }}>
+                        · Latest counter-offer: ₹{parseFloat(latestCounterOffer.offered_price).toFixed(0)}
+                      </span>
                     )}
-                    <p className={`text-xs mt-1 ${isOwn ? 'text-slate-300' : 'text-slate-500'}`}>
-                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
                   </div>
                 </div>
-              );
-            })
-          )}
 
-          {/* Counter-Offer Card */}
-          {counterOffer && counterOffer !== parseFloat(task.price) && (
-            <div className="mx-auto bg-white border-2 border-green-500 rounded-xl p-4 max-w-sm text-center shadow-md my-6">
-              <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Counter-Offer</span>
-              <h2 className="text-3xl font-extrabold text-slate-900 my-2">₹{counterOffer}</h2>
-              <p className="text-sm text-slate-500 mb-4">{freelancerName} has offered this amount for the task.</p>
-              <button
-                onClick={handleAcceptOffer}
-                disabled={accepting || task.status !== 'Open'}
-                className="w-full bg-green-500 text-white py-3 rounded-lg font-bold hover:bg-green-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-2"
-              >
-                {accepting ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Updating Price...
-                  </>
+                {/* Inline price editor */}
+                {editingPrice ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 13 }}>₹</span>
+                      <input
+                        autoFocus
+                        type="number"
+                        value={priceInput}
+                        onChange={e => setPriceInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleUpdatePrice(); if (e.key === 'Escape') setEditingPrice(false); }}
+                        style={{ paddingLeft: 26, paddingRight: 10, paddingTop: 8, paddingBottom: 8, border: '2px solid #FFD93D', borderRadius: 9, width: 96, fontSize: 14, fontWeight: 700, color: '#1e293b', outline: 'none' }}
+                      />
+                    </div>
+                    <button
+                      onClick={() => handleUpdatePrice()}
+                      disabled={accepting}
+                      style={{ background: '#1A1A2E', color: '#FFD93D', border: 'none', borderRadius: 9, padding: '8px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+                    >
+                      {accepting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle size={13} />} Save
+                    </button>
+                    <button
+                      onClick={() => setEditingPrice(false)}
+                      style={{ background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 9, padding: 8, cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
                 ) : (
-                  <>
-                    <CheckCircle size={18} />
-                    {task.status !== 'Open' ? 'Task Not Available' : 'Accept Offer & Update Price'}
-                  </>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 11, color: '#94a3b8' }}>Task Price</div>
+                      <div style={{ fontSize: 19, fontWeight: 800, color: '#1A1A2E', display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <IndianRupee size={14} />{parseFloat(finalPrice).toFixed(0)}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setPriceInput(String(finalPrice)); setEditingPrice(true); }}
+                      style={{ background: '#FFD93D', border: 'none', borderRadius: 9, padding: '8px 12px', cursor: 'pointer', color: '#1A1A2E', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700 }}
+                    >
+                      <PenLine size={13} /> Edit Price
+                    </button>
+                  </div>
                 )}
-              </button>
+              </div>
+
+              {/* Messages area */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px', background: '#f8fafc' }}>
+                {msgLoading ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+                    <Loader2 size={24} className="animate-spin" style={{ color: '#94a3b8' }} />
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '56px 20px' }}>
+                    <MessageSquare size={32} style={{ color: '#e2e8f0', margin: '0 auto 10px' }} />
+                    <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>No messages yet</p>
+                    <p style={{ fontSize: 11, color: '#cbd5e1', marginTop: 4 }}>Start the conversation below</p>
+                  </div>
+                ) : (
+                  Object.entries(grouped).map(([date, msgs]) => (
+                    <div key={date}>
+                      {/* Date label */}
+                      <div style={{ textAlign: 'center', margin: '14px 0 10px' }}>
+                        <span style={{ background: '#e2e8f0', color: '#64748b', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>{date}</span>
+                      </div>
+
+                      {msgs.map((msg, idx) => {
+                        const isOwn = msg.sender_id === user?.id;
+                        return (
+                          <div
+                            key={msg.id || idx}
+                            style={{ display: 'flex', gap: 8, marginBottom: 8, flexDirection: isOwn ? 'row-reverse' : 'row', alignItems: 'flex-end' }}
+                          >
+                            {/* Other-user avatar */}
+                            {!isOwn && (
+                              <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#e2e8f0', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
+                                {selectedInitial}
+                              </div>
+                            )}
+                            <div style={{ maxWidth: '68%' }}>
+                              {/* Bubble */}
+                              <div style={{
+                                padding: '9px 13px',
+                                borderRadius: isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                                background: isOwn ? '#1A1A2E' : 'white',
+                                color: isOwn ? 'rgba(255,255,255,0.9)' : '#1e293b',
+                                fontSize: 13, lineHeight: 1.5,
+                                border: isOwn ? 'none' : '1px solid #e2e8f0',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                              }}>
+                                {msg.content}
+                                {msg.offered_price && (
+                                  <div style={{
+                                    marginTop: 6,
+                                    background: isOwn ? 'rgba(255,217,61,0.12)' : '#f0fdf4',
+                                    border: isOwn ? '1px solid rgba(255,217,61,0.25)' : '1px solid #86efac',
+                                    borderRadius: 7, padding: '4px 9px',
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    fontSize: 11, fontWeight: 700,
+                                    color: isOwn ? '#FFD93D' : '#166534',
+                                  }}>
+                                    <IndianRupee size={10} /> {parseFloat(msg.offered_price).toFixed(0)} offer
+                                  </div>
+                                )}
+                              </div>
+                              {/* Timestamp */}
+                              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, textAlign: isOwn ? 'right' : 'left', paddingLeft: isOwn ? 0 : 3, paddingRight: isOwn ? 3 : 0 }}>
+                                {fmtTime(msg.created_at)}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))
+                )}
+
+                {/* Counter-offer action card */}
+                {latestCounterOffer && parseFloat(latestCounterOffer.offered_price) !== parseFloat(finalPrice) && (
+                  <div style={{ background: 'white', border: '2px solid #0ea5e9', borderRadius: 14, padding: '14px 18px', margin: '14px 0', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 8px rgba(14,165,233,0.1)' }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: '#0ea5e9', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 3px' }}>
+                        Counter-Offer from {selectedName}
+                      </p>
+                      <p style={{ fontSize: 22, fontWeight: 800, color: '#1e293b', margin: '0 0 2px', display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <IndianRupee size={16} />{parseFloat(latestCounterOffer.offered_price).toFixed(0)}
+                      </p>
+                      <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+                        Your current task price: ₹{parseFloat(finalPrice).toFixed(0)}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <button
+                        onClick={handleAcceptCounterOffer}
+                        disabled={accepting}
+                        style={{ background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 9, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+                      >
+                        {accepting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle size={13} />}
+                        Accept ₹{parseFloat(latestCounterOffer.offered_price).toFixed(0)}
+                      </button>
+                      <button
+                        onClick={() => { setPriceInput(String(finalPrice)); setEditingPrice(true); }}
+                        style={{ background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 9, padding: '6px 16px', fontWeight: 600, fontSize: 12, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', gap: 5 }}
+                      >
+                        <RotateCcw size={12} /> Make Counter-Offer
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Message input */}
+              <div style={{ padding: '12px 16px', borderTop: '1px solid #f1f5f9', background: 'white' }}>
+                <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    placeholder={`Message ${selectedName}…`}
+                    style={{ flex: 1, padding: '10px 15px', border: '1.5px solid #e2e8f0', borderRadius: 11, fontSize: 13, outline: 'none', background: '#f8fafc', color: '#1e293b' }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting || !message.trim()}
+                    style={{ background: '#1A1A2E', color: '#FFD93D', border: 'none', borderRadius: 11, padding: '10px 20px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, opacity: submitting || !message.trim() ? 0.5 : 1 }}
+                  >
+                    {submitting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                    Send
+                  </button>
+                </form>
+              </div>
+
             </div>
           )}
         </div>
-
-        {/* Input Area */}
-        <div className="p-4 border-t border-slate-200 bg-white">
-          <form className="flex gap-2" onSubmit={handleSendMessage}>
-            <input
-              type="text"
-              className="flex-grow px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary text-sm"
-              placeholder="Type a message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-primary transition flex items-center gap-2 disabled:opacity-60"
-            >
-              {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-            </button>
-          </form>
-        </div>
-
       </div>
     </div>
   );

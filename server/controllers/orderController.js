@@ -30,9 +30,9 @@ exports.acceptFreelancerOffer = async (req, res) => {
 
     // Create notification for freelancer
     await pool.query(
-      `INSERT INTO notifications (user_id, message, type, is_read)
-       VALUES ($1, $2, $3, FALSE)`,
-      [freelancer_id, `Your offer for "${taskCheck.rows[0].title}" was accepted!`, 'order']
+      `INSERT INTO notifications (user_id, title, message, type, is_read)
+       VALUES ($1, $2, $3, $4, FALSE)`,
+      [freelancer_id, 'Offer Accepted', `Your offer for "${taskCheck.rows[0].title}" was accepted!`, 'order']
     );
 
     res.status(201).json({
@@ -83,9 +83,9 @@ exports.applyForTask = async (req, res) => {
 
     // Create notification for task poster
     await pool.query(
-      `INSERT INTO notifications (user_id, message, type, is_read)
-       VALUES ($1, $2, $3, FALSE)`,
-      [task.rows[0].poster_id, `New application for "${task.rows[0].title}"`, 'task']
+      `INSERT INTO notifications (user_id, title, message, type, is_read)
+       VALUES ($1, $2, $3, $4, FALSE)`,
+      [task.rows[0].poster_id, 'New Application', `New application for "${task.rows[0].title}"`, 'task']
     );
 
     res.status(201).json({
@@ -262,6 +262,37 @@ exports.createOrder = async (req, res) => {
     );
 
     res.status(201).json({ order: newOrder.rows[0], message: 'Order created successfully' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// GET OFFERS FOR A TASK (task poster sees all applicants)
+exports.getTaskOffers = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const poster_id = req.user.id;
+
+    // Verify the task belongs to this user
+    const taskCheck = await pool.query(
+      'SELECT id FROM tasks WHERE id = $1 AND poster_id = $2',
+      [taskId, poster_id]
+    );
+    if (taskCheck.rows.length === 0) {
+      return res.status(403).json({ message: 'Not authorized to view these offers' });
+    }
+
+    const offers = await pool.query(
+      `SELECT o.*, u.name AS freelancer_name, u.email AS freelancer_email
+       FROM offers o
+       JOIN users u ON o.freelancer_id = u.id
+       WHERE o.task_id = $1
+       ORDER BY o.created_at DESC`,
+      [taskId]
+    );
+
+    res.json({ offers: offers.rows });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

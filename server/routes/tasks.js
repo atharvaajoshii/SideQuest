@@ -18,6 +18,9 @@ router.get('/my-tasks', authMiddleware, taskController.getMyTasks);
 // Get tasks I'm working on as freelancer (protected)
 router.get('/my-work', authMiddleware, taskController.getMyAcceptedTasks);
 
+// Update task price from negotiation (protected, must own task) — MUST be before /:id
+router.post('/update-price', authMiddleware, taskController.updateTaskPriceFromNegotiation);
+
 // Get single task
 router.get('/:id', taskController.getTaskById);
 
@@ -29,8 +32,5 @@ router.delete('/:id', authMiddleware, taskController.deleteTask);
 
 // Toggle task visibility (protected, must own task)
 router.patch('/:id/visibility', authMiddleware, taskController.toggleTaskVisibility);
-
-// Update task price from negotiation (protected, must own task)
-router.post('/update-price', authMiddleware, taskController.updateTaskPriceFromNegotiation);
 
 module.exports = router;
