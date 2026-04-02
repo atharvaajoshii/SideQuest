@@ -154,7 +154,7 @@ export default function Negotiation() {
         {/* Chat Header */}
         <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
           <Link to={`/freelancer/${task.poster_id}`} className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-gradient-to-br from-primary to-indigo-600 rounded-full flex items-center justify-center font-bold text-white">
+            <div className="h-10 w-10 bg-linear-to-br from-primary to-indigo-600 rounded-full flex items-center justify-center font-bold text-white">
               {task.poster_name?.charAt(0) || 'P'}
             </div>
             <div>
@@ -177,7 +177,7 @@ export default function Negotiation() {
         </div>
 
         {/* Chat Messages */}
-        <div className="flex-grow p-6 overflow-y-auto space-y-4 bg-slate-50">
+        <div className="grow p-6 overflow-y-auto space-y-4 bg-slate-50">
           {messages.length === 0 ? (
             <div className="text-center text-slate-500 py-8">
               <p className="text-sm">No messages yet. Start the negotiation!</p>
@@ -188,7 +188,7 @@ export default function Negotiation() {
               const isOwn = msg.sender_id === user?.id;
               return (
                 <div key={msg.id || idx} className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-                  <div className={`h-8 w-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${
+                  <div className={`h-8 w-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${
                     isOwn ? 'bg-slate-900 text-white' : 'bg-indigo-100 text-indigo-600'
                   }`}>
                     {isOwn ? (user?.name?.charAt(0) || 'U') : (task.poster_name?.charAt(0) || 'P')}
@@ -236,7 +236,7 @@ export default function Negotiation() {
           <form className="flex gap-2" onSubmit={handleSendMessage}>
             <input
               type="text"
-              className="flex-grow px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+              className="grow px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary text-sm"
               placeholder="Type a message or counter-offer..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
