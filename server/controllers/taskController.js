@@ -221,18 +221,23 @@ exports.updateTaskPriceFromNegotiation = async (req, res) => {
       [newPrice, taskId]
     );
 
-    // Get freelancer name for notification
-    const freelancerResult = await pool.query('SELECT name FROM users WHERE id = $1', [freelancerId]);
-    const freelancerName = freelancerResult.rows[0]?.name || 'Freelancer';
-
-    // Create notification for freelancer
+    // Update previous offer status to 'Countered'
     await pool.query(
-      `INSERT INTO notifications (user_id, title, message, type)
-       VALUES ($1, $2, $3, 'negotiation')`,
+      `UPDATE offers SET status = 'Countered', updated_at = NOW()
+       WHERE task_id = $1 AND freelancer_id = $2 AND status = 'Pending'`,
+      [taskId, freelancerId]
+    );
+
+    // Create notification for freelancer — this is a counter-offer response
+    await pool.query(
+      `INSERT INTO notifications (user_id, title, message, type, link)
+       VALUES ($1, $2, $3, $4, $5)`,
       [
         freelancerId,
-        'Offer Accepted',
-        `The poster updated the price for "${taskCheck.rows[0].title}" to ₹${newPrice}`
+        'Counter-Offer',
+        `The poster countered your offer with ₹${newPrice} for "${taskCheck.rows[0].title}"`,
+        'negotiation',
+        `/negotiate-poster/${taskId}`
       ]
     );
 

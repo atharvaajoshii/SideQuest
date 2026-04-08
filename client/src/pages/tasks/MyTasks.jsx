@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Edit, Trash2, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Edit, Trash2, Eye, EyeOff, Loader2, MessageSquare } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -143,7 +143,14 @@ export default function MyTasks() {
                           {task.status_display || task.status}
                         </span>
                       </td>
-                      <td className="p-4 font-medium text-primary">{task.offers_count || 0} offers</td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => navigate(`/negotiate-poster/${task.id}`)}
+                          className="font-medium text-primary hover:text-green-600 transition"
+                        >
+                          {task.offers_count || 0} offers
+                        </button>
+                      </td>
                       <td className="p-4 text-center">
                         <button
                           onClick={() => handleToggleVisibility(task.id)}
@@ -165,6 +172,13 @@ export default function MyTasks() {
                         </button>
                       </td>
                       <td className="p-4 flex justify-center gap-3">
+                        <button
+                          onClick={() => navigate(`/negotiate-poster/${task.id}`)}
+                          className="text-slate-400 hover:text-green-600 transition"
+                          title="View applicants & negotiate"
+                        >
+                          <MessageSquare size={18} />
+                        </button>
                         <button
                           onClick={() => navigate(`/tasks/${task.id}`)}
                           className="text-slate-400 hover:text-primary transition"

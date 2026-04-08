@@ -11,6 +11,7 @@ export default function Layout() {
   const { user, token, logout } = useAuth();
   // FIX: real unread notification count instead of hardcoded dot
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
 
   useEffect(() => {
     if (!token) return;
@@ -24,9 +25,20 @@ export default function Layout() {
         })
         .catch(() => {});
     };
+    const fetchUnreadMessages = () => {
+      fetch(`${API}/api/messages/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) setUnreadMsgCount(data.count || 0);
+        })
+        .catch(() => {});
+    };
     fetchUnread();
+    fetchUnreadMessages();
     // Poll every 30 seconds
-    const interval = setInterval(fetchUnread, 30000);
+    const interval = setInterval(() => { fetchUnread(); fetchUnreadMessages(); }, 30000);
     return () => clearInterval(interval);
   }, [token]);
 
@@ -50,7 +62,7 @@ export default function Layout() {
     { to: '/home',       label: 'Home',      icon: <Home size={15} /> },
     { to: '/search',     label: 'Browse',    icon: <Search size={15} /> },
     { to: '/tasks/mine', label: 'My Tasks',  icon: null },
-    { to: '/messages',   label: 'Messages',  icon: null },
+    { to: '/messages',   label: 'Messages',  icon: null, hasUnread: unreadMsgCount > 0 },
   ];
 
   return (
@@ -86,8 +98,8 @@ export default function Layout() {
 
           {/* Nav links */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {navLinks.map(({ to, label, icon }) => (
-              <Link key={to} to={to} style={{ textDecoration: 'none' }}>
+            {navLinks.map(({ to, label, icon, hasUnread }) => (
+              <Link key={to} to={to} style={{ textDecoration: 'none', position: 'relative' }}>
                 <span style={{
                   display: 'flex', alignItems: 'center', gap: 5,
                   color: isActive(to) ? '#FFD93D' : 'rgba(255,255,255,0.6)',
@@ -103,6 +115,15 @@ export default function Layout() {
                   {icon}
                   {label}
                 </span>
+                {/* Unread indicator for Messages */}
+                {hasUnread && (
+                  <div style={{
+                    width: 7, height: 7, borderRadius: '50%',
+                    background: '#FF6B35',
+                    position: 'absolute', top: 4, right: 4,
+                    border: '1.5px solid #1A1A2E',
+                  }} />
+                )}
               </Link>
             ))}
           </div>

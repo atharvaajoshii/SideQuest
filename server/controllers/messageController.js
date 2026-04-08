@@ -1,5 +1,22 @@
 const pool = require('../config/db');
 
+// ================= GET UNREAD MESSAGE COUNT =================
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(`
+      SELECT COUNT(*) as count FROM messages
+      WHERE receiver_id = $1 AND is_read = FALSE
+    `, [userId]);
+
+    res.json({ count: parseInt(result.rows[0].count) || 0 });
+  } catch (err) {
+    console.error('❌ GET UNREAD MESSAGE COUNT ERROR:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // ================= GET CONVERSATIONS =================
 exports.getConversations = async (req, res) => {
   try {
@@ -29,7 +46,8 @@ exports.getConversations = async (req, res) => {
             OR (m2.sender_id = u.id AND m2.receiver_id = $1))
          ORDER BY m2.created_at DESC LIMIT 1) AS negotiation_id,
         (SELECT t.title FROM tasks t
-         INNER JOIN messages m3 ON t.id = m3.negotiation_id
+         INNER JOIN negotiations n ON t.id = n.task_id
+         INNER JOIN messages m3 ON n.id = m3.negotiation_id
          WHERE m3.negotiation_id IS NOT NULL
            AND ((m3.sender_id = $1 AND m3.receiver_id = u.id)
             OR (m3.sender_id = u.id AND m3.receiver_id = $1))
@@ -96,24 +114,50 @@ exports.sendMessage = async (req, res) => {
       return res.status(400).json({ message: 'Receiver ID and content are required' });
     }
 
-    const newMessage = await pool.query(`
-      INSERT INTO messages (sender_id, receiver_id, content, order_id, negotiation_id, reply_to)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-    `, [
-      senderId,
-      receiver_id,
-      content,
-      order_id || null,
-      negotiation_id || null,
-      reply_to || null
-    ]);
+    // Check if offered_price column exists
+    const columnCheck = await pool.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'messages' AND column_name = 'offered_price'
+    `);
+
+    const hasOfferedPrice = columnCheck.rows.length > 0;
+
+    let newMessage;
+    if (hasOfferedPrice) {
+      newMessage = await pool.query(`
+        INSERT INTO messages (sender_id, receiver_id, content, order_id, negotiation_id, reply_to, offered_price)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *
+      `, [
+        senderId,
+        receiver_id,
+        content,
+        order_id || null,
+        negotiation_id || null,
+        reply_to || null,
+        offered_price || null
+      ]);
+    } else {
+      // Fallback for databases without offered_price column
+      newMessage = await pool.query(`
+        INSERT INTO messages (sender_id, receiver_id, content, order_id, negotiation_id, reply_to)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+      `, [
+        senderId,
+        receiver_id,
+        content,
+        order_id || null,
+        negotiation_id || null,
+        reply_to || null
+      ]);
+    }
 
     // If this is a negotiation message with an offered price, send notification
     if (negotiation_id && offered_price) {
       // Get task details to find the poster
       const taskResult = await pool.query(`
-        SELECT t.poster_id, t.title, u.name as freelancer_name
+        SELECT t.poster_id, t.id as task_id, t.title, u.name as freelancer_name
         FROM negotiations n
         JOIN tasks t ON n.task_id = t.id
         JOIN users u ON u.id = $1
@@ -121,16 +165,17 @@ exports.sendMessage = async (req, res) => {
       `, [senderId, negotiation_id]);
 
       if (taskResult.rows.length > 0) {
-        const { poster_id, title, freelancer_name } = taskResult.rows[0];
+        const { poster_id, task_id, title, freelancer_name } = taskResult.rows[0];
 
-        // Create notification for task poster
+        // Create notification for task poster with link to negotiation page
         await pool.query(`
-          INSERT INTO notifications (user_id, title, message, type)
-          VALUES ($1, $2, $3, 'negotiation')
+          INSERT INTO notifications (user_id, title, message, type, link)
+          VALUES ($1, $2, $3, 'negotiation', $4)
         `, [
           poster_id,
           'New Counter-Offer',
-          `${freelancer_name} offered ₹${offered_price} for "${title}"`
+          `${freelancer_name} offered ₹${offered_price} for "${title}"`,
+          `/negotiate-poster/${task_id}`
         ]);
       }
     }

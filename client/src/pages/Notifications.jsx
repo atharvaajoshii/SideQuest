@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Bell, Check, CheckCheck, AlertCircle, MessageCircle, DollarSign, FileText } from 'lucide-react';
+import { Bell, Check, CheckCheck, AlertCircle, MessageCircle, DollarSign, FileText, IndianRupee } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -76,6 +76,8 @@ export default function Notifications() {
         return <Bell size={20} className="text-primary" />;
       case 'system':
         return <AlertCircle size={20} className="text-orange-500" />;
+      case 'negotiation':
+        return <IndianRupee size={20} className="text-green-600" />;
       default:
         return <Bell size={20} className="text-slate-500" />;
     }
@@ -97,9 +99,9 @@ export default function Notifications() {
         {/* Header */}
         <div className="mb-6 flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Announcements</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Notifications</h1>
             <p className="text-sm text-slate-500 mt-1">
-              Official announcements from the admin
+              {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
             </p>
           </div>
           {unreadCount > 0 && (

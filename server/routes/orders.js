@@ -18,6 +18,9 @@ router.post('/task/:taskId/accept', orderController.acceptFreelancerOffer);
 // POST /api/orders/task/:taskId/apply - Apply for a task (MUST be before /:id)
 router.post('/task/:taskId/apply', orderController.applyForTask);
 
+// POST /api/orders/offer/reject - Reject a freelancer's offer
+router.post('/offer/reject', orderController.rejectOffer);
+
 // GET /api/orders/task/:taskId/offers - Get all offers for a task (poster only, MUST be before /:id)
 router.get('/task/:taskId/offers', orderController.getTaskOffers);
 

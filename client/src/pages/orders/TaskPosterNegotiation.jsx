@@ -11,15 +11,15 @@ export default function TaskPosterNegotiation() {
   const navigate = useNavigate();
   const { user, token, API } = useAuth();
   const messagesEndRef = useRef(null);
+  const pollRef = useRef(null);
 
-  // ── Data state ──────────────────────────────────────────────────────────
+  // ── Data ─────────────────────────────────────────────────────────────────
   const [task, setTask]               = useState(null);
-  const [applicants, setApplicants]   = useState([]);
-  const [selected, setSelected]       = useState(null);
+  const [negotiations, setNegotiations] = useState([]); // all freelancers who opened negotiations
+  const [selected, setSelected]       = useState(null); // currently viewed negotiation
   const [messages, setMessages]       = useState([]);
-  const [negotiation, setNegotiation] = useState(null);
 
-  // ── UI state ────────────────────────────────────────────────────────────
+  // ── UI ───────────────────────────────────────────────────────────────────
   const [loading, setLoading]           = useState(true);
   const [msgLoading, setMsgLoading]     = useState(false);
   const [submitting, setSubmitting]     = useState(false);
@@ -36,83 +36,40 @@ export default function TaskPosterNegotiation() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── Initial load ─────────────────────────────────────────────────────────
+  // ── Initial load: task + all negotiations ────────────────────────────────
   useEffect(() => {
-    const fetchTask = async () => {
+    if (!user) return;
+    const init = async () => {
       try {
         const res = await fetch(`${API}/api/tasks/${taskId}`);
         if (!res.ok) { navigate('/tasks/mine'); return; }
         const data = await res.json();
-
-        if (data.poster_id !== user?.id) { navigate(`/tasks/${taskId}`); return; }
-
+        if (data.poster_id !== user.id) { navigate(`/tasks/${taskId}`); return; }
         setTask(data);
         setFinalPrice(data.price);
-
-        // Fetch applicants/offers for this task
-        const offersRes = await fetch(`${API}/api/orders/task/${taskId}/offers`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (offersRes.ok) {
-          const offersData = await offersRes.json();
-          setApplicants(offersData.offers || []);
-        }
+        await loadNegotiations();
       } catch (err) {
-        console.error('Failed to fetch task:', err);
+        console.error('Init error:', err);
       } finally {
         setLoading(false);
       }
     };
-    if (user) fetchTask();
-  }, [taskId, API, navigate, token, user]);
+    init();
+  }, [taskId, user]);
 
-  // ── Load messages when applicant selected ────────────────────────────────
+  // ── Poll for new messages when a negotiation is selected ─────────────────
   useEffect(() => {
     if (!selected) return;
-    const load = async () => {
-      setMsgLoading(true);
-      try {
-        const negRes = await fetch(`${API}/api/negotiations/task/${taskId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (negRes.ok) {
-          const negData = await negRes.json();
-          setNegotiation(negData.negotiation);
-        }
+    pollRef.current = setInterval(() => loadMessages(selected, false), 8000);
+    return () => clearInterval(pollRef.current);
+  }, [selected]);
 
-        const msgRes = await fetch(`${API}/api/messages/${selected.freelancer_id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (msgRes.ok) {
-          const msgData = await msgRes.json();
-          const msgs = msgData.messages || [];
-          setMessages(msgs);
-
-          // Pre-fill price input with freelancer's latest counter-offer
-          const latestOffer = msgs
-            .filter(m => m.sender_id === selected.freelancer_id && m.offered_price)
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-          if (latestOffer) setPriceInput(String(latestOffer.offered_price));
-        }
-      } catch (err) {
-        console.error('Failed to load messages:', err);
-      } finally {
-        setMsgLoading(false);
-      }
-    };
-    load();
-  }, [selected, taskId, API, token]);
-
-  // ── Helpers ──────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const flash = (type, text) => {
     if (type === 'success') { setSuccessMsg(text); setErrorMsg(''); }
-    else { setErrorMsg(text); setSuccessMsg(''); }
-    setTimeout(() => { setSuccessMsg(''); setErrorMsg(''); }, 4000);
+    else                    { setErrorMsg(text);   setSuccessMsg(''); }
+    setTimeout(() => { setSuccessMsg(''); setErrorMsg(''); }, 4500);
   };
-
-  const latestCounterOffer = messages
-    .filter(m => m.sender_id === selected?.freelancer_id && m.offered_price)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
 
   const fmtTime = (ts) =>
     new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -134,6 +91,61 @@ export default function TaskPosterNegotiation() {
     return acc;
   }, {});
 
+  // Latest counter-offer sent by the freelancer in this conversation
+  const latestCounterOffer = messages
+    .filter(m => m.sender_id === selected?.freelancer_id && m.offered_price)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+  // ── Data loaders ──────────────────────────────────────────────────────────
+
+  const loadNegotiations = async () => {
+    try {
+      const res = await fetch(`${API}/api/negotiations/task/${taskId}/all`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNegotiations(data.negotiations || []);
+      }
+    } catch (err) {
+      console.error('loadNegotiations error:', err);
+    }
+  };
+
+  // Load messages between poster (current user) and the freelancer
+  const loadMessages = async (negotiation, showSpinner = true) => {
+    if (showSpinner) setMsgLoading(true);
+    try {
+      // Use the messages endpoint — fetch conversation between poster and freelancer
+      const res = await fetch(`${API}/api/messages/${negotiation.freelancer_id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data.messages || []);
+      }
+    } catch (err) {
+      console.error('loadMessages error:', err);
+    } finally {
+      if (showSpinner) setMsgLoading(false);
+    }
+  };
+
+  const selectNegotiation = async (neg) => {
+    clearInterval(pollRef.current);
+    setSelected(neg);
+    setMessages([]);
+    setEditingPrice(false);
+    setMessage('');
+    // Pre-fill price input with freelancer's latest counter-offer if available
+    if (neg.latest_offered_price) {
+      setPriceInput(String(neg.latest_offered_price));
+    } else {
+      setPriceInput('');
+    }
+    await loadMessages(neg, true);
+  };
+
   // ── Actions ───────────────────────────────────────────────────────────────
 
   const handleSendMessage = async (e) => {
@@ -147,7 +159,7 @@ export default function TaskPosterNegotiation() {
         body: JSON.stringify({
           receiver_id: selected.freelancer_id,
           content: message,
-          negotiation_id: negotiation?.id || null,
+          negotiation_id: selected.negotiation_id || null,
         }),
       });
       if (res.ok) {
@@ -165,7 +177,8 @@ export default function TaskPosterNegotiation() {
     }
   };
 
-  const handleUpdatePrice = async (priceOverride, notifyFreelancer = true) => {
+  // Update task price — this is NOT accepting an offer, it's a price proposal
+  const handleUpdatePrice = async (priceOverride) => {
     const newPrice = parseFloat(priceOverride ?? priceInput);
     if (!newPrice || newPrice <= 0) { flash('error', 'Enter a valid price'); return; }
     setAccepting(true);
@@ -185,25 +198,18 @@ export default function TaskPosterNegotiation() {
         setFinalPrice(newPrice);
         setEditingPrice(false);
         flash('success', `Task price updated to ₹${newPrice}`);
-
-        // Notify the selected freelancer via message
-        if (notifyFreelancer && selected) {
+        // Notify via message if a freelancer is selected
+        if (selected) {
           await fetch(`${API}/api/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({
               receiver_id: selected.freelancer_id,
-              content: `I've set the final price to ₹${newPrice}. Let me know if you'd like to proceed!`,
-              negotiation_id: negotiation?.id || null,
+              content: `I've updated the task price to ₹${newPrice}. Let me know if you'd like to proceed!`,
+              negotiation_id: selected.negotiation_id || null,
             }),
           });
-          const msgRes = await fetch(`${API}/api/messages/${selected.freelancer_id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (msgRes.ok) {
-            const msgData = await msgRes.json();
-            setMessages(msgData.messages || []);
-          }
+          await loadMessages(selected, false);
         }
       } else {
         flash('error', data.message || 'Failed to update price');
@@ -215,11 +221,48 @@ export default function TaskPosterNegotiation() {
     }
   };
 
-  const handleAcceptCounterOffer = async () => {
-    if (!latestCounterOffer) return;
+  // Accept the freelancer's counter-offer and create an order
+  const handleAcceptOffer = async () => {
+    if (!latestCounterOffer || !selected) return;
     const price = parseFloat(latestCounterOffer.offered_price);
-    await handleUpdatePrice(price, true);
-    setPriceInput(String(price));
+    setAccepting(true);
+    try {
+      // Create the order — this is the real "acceptance"
+      const orderRes = await fetch(`${API}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          freelancer_id: selected.freelancer_id,
+          task_id: parseInt(taskId),
+          agreed_price: price,
+        }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        flash('error', orderData.message || 'Failed to create order');
+        return;
+      }
+
+      // Also update task price to match
+      await fetch(`${API}/api/tasks/update-price`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          taskId: parseInt(taskId),
+          newPrice: price,
+          freelancerId: selected.freelancer_id,
+        }),
+      });
+
+      setTask(prev => ({ ...prev, price }));
+      setFinalPrice(price);
+      flash('success', `Offer accepted! Order created at ₹${price}.`);
+      navigate(`/orders/${orderData.order.id}`);
+    } catch {
+      flash('error', 'Server error. Please try again.');
+    } finally {
+      setAccepting(false);
+    }
   };
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -245,12 +288,11 @@ export default function TaskPosterNegotiation() {
   const selectedName    = selected?.freelancer_name || 'Freelancer';
   const selectedInitial = selectedName.charAt(0).toUpperCase();
 
-  // ── Main render ───────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#F7F6F2', padding: '24px 16px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
-        {/* Top bar */}
+        {/* ── Top bar ──────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
           <button
             onClick={() => navigate(`/tasks/${taskId}`)}
@@ -271,7 +313,7 @@ export default function TaskPosterNegotiation() {
           </div>
         </div>
 
-        {/* Flash banners */}
+        {/* ── Flash banners ─────────────────────────────────────────────── */}
         {successMsg && (
           <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '10px 16px', marginBottom: 14, color: '#166534', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
             <CheckCircle size={15} /> {successMsg}
@@ -283,37 +325,38 @@ export default function TaskPosterNegotiation() {
           </div>
         )}
 
-        {/* Main 2-column layout */}
+        {/* ── Two-column layout ─────────────────────────────────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: '272px 1fr', gap: 14, height: 'calc(100vh - 190px)', minHeight: 500 }}>
 
-          {/* ── Left: Applicants sidebar ─────────────────────────────── */}
+          {/* ── Left sidebar: negotiations list ──────────────────────── */}
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
             {/* Sidebar header */}
             <div style={{ padding: '15px 18px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Users size={15} style={{ color: '#64748b' }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>Applicants</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>Negotiations</span>
               <span style={{ marginLeft: 'auto', background: '#f1f5f9', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 700, color: '#475569' }}>
-                {applicants.length}
+                {negotiations.length}
               </span>
             </div>
 
-            {/* Applicant list */}
+            {/* List */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              {applicants.length === 0 ? (
+              {negotiations.length === 0 ? (
                 <div style={{ padding: '32px 18px', textAlign: 'center' }}>
                   <Users size={28} style={{ color: '#e2e8f0', margin: '0 auto 10px' }} />
-                  <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>No applicants yet</p>
-                  <p style={{ fontSize: 11, color: '#cbd5e1', marginTop: 4 }}>Freelancers who apply will appear here</p>
+                  <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>No negotiations yet</p>
+                  <p style={{ fontSize: 11, color: '#cbd5e1', marginTop: 4 }}>Freelancers who message you about this task will appear here</p>
                 </div>
               ) : (
-                applicants.map((applicant) => {
-                  const isActive  = selected?.freelancer_id === applicant.freelancer_id;
-                  const initial   = (applicant.freelancer_name || 'F').charAt(0).toUpperCase();
+                negotiations.map((neg) => {
+                  const isActive  = selected?.freelancer_id === neg.freelancer_id;
+                  const initial   = (neg.freelancer_name || 'F').charAt(0).toUpperCase();
+                  const offeredPrice = neg.latest_offered_price;
                   return (
                     <button
-                      key={applicant.freelancer_id}
-                      onClick={() => { setSelected(applicant); setMessages([]); setEditingPrice(false); }}
+                      key={neg.freelancer_id}
+                      onClick={() => selectNegotiation(neg)}
                       style={{
                         width: '100%', textAlign: 'left', padding: '11px 18px',
                         background: isActive ? '#f8fafc' : 'transparent',
@@ -332,11 +375,19 @@ export default function TaskPosterNegotiation() {
                       }}>{initial}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {applicant.freelancer_name || 'Freelancer'}
+                          {neg.freelancer_name || 'Freelancer'}
                         </div>
                         <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
-                          Offered: <span style={{ fontWeight: 700, color: '#0ea5e9' }}>₹{parseFloat(applicant.offered_price || 0).toFixed(0)}</span>
+                          {offeredPrice
+                            ? <span>Counter-offer: <span style={{ fontWeight: 700, color: '#0ea5e9' }}>₹{parseFloat(offeredPrice).toFixed(0)}</span></span>
+                            : <span style={{ color: '#cbd5e1' }}>No offer yet</span>
+                          }
                         </div>
+                        {neg.last_message && (
+                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {neg.last_message}
+                          </div>
+                        )}
                       </div>
                       <ChevronRight size={13} style={{ color: '#cbd5e1', flexShrink: 0 }} />
                     </button>
@@ -345,10 +396,10 @@ export default function TaskPosterNegotiation() {
               )}
             </div>
 
-            {/* Footer: quick price update (no freelancer selected) */}
+            {/* Footer: quick price update */}
             <div style={{ padding: '14px 18px', borderTop: '1px solid #f1f5f9', background: '#fafafa' }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
-                <PenLine size={11} /> Quick Price Update
+                <PenLine size={11} /> Update Task Price
               </p>
               <div style={{ display: 'flex', gap: 6 }}>
                 <div style={{ flex: 1, position: 'relative' }}>
@@ -362,7 +413,7 @@ export default function TaskPosterNegotiation() {
                   />
                 </div>
                 <button
-                  onClick={() => handleUpdatePrice(undefined, !!selected)}
+                  onClick={() => handleUpdatePrice()}
                   disabled={accepting || !priceInput}
                   style={{ background: '#1A1A2E', color: '#FFD93D', border: 'none', borderRadius: 9, padding: '8px 12px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, opacity: accepting || !priceInput ? 0.5 : 1 }}
                 >
@@ -374,38 +425,38 @@ export default function TaskPosterNegotiation() {
             </div>
           </div>
 
-          {/* ── Right: Chat panel ────────────────────────────────────── */}
+          {/* ── Right: chat panel ────────────────────────────────────── */}
           {!selected ? (
-            /* Empty state */
             <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 48 }}>
               <MessageSquare size={44} style={{ color: '#e2e8f0', marginBottom: 16 }} />
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>Select an applicant</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
+                {negotiations.length === 0 ? 'No negotiations yet' : 'Select a negotiation'}
+              </h3>
               <p style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center', maxWidth: 300, lineHeight: 1.6 }}>
-                Pick a freelancer from the sidebar to view your conversation, respond to their offers, and finalize the task price.
+                {negotiations.length === 0
+                  ? 'When freelancers message you about this task, they\'ll appear in the sidebar.'
+                  : 'Pick a freelancer from the sidebar to view your conversation and manage the final price.'
+                }
               </p>
               <Link to="/messages" style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#1A1A2E', textDecoration: 'none', background: '#f1f5f9', padding: '8px 16px', borderRadius: 10 }}>
                 <MessageSquare size={14} /> Open All Messages
               </Link>
             </div>
           ) : (
-            /* Chat */
             <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
               {/* Chat header */}
               <div style={{ padding: '13px 20px', borderBottom: '1px solid #f1f5f9', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 12 }}>
-                {/* Avatar + name */}
                 <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#1A1A2E', color: '#FFD93D', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, flexShrink: 0 }}>
                   {selectedInitial}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{selectedName}</div>
                   <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                    Applied at ₹{parseFloat(selected.offered_price || 0).toFixed(0)}
-                    {latestCounterOffer && (
-                      <span style={{ marginLeft: 8, color: '#0ea5e9', fontWeight: 600 }}>
-                        · Latest counter-offer: ₹{parseFloat(latestCounterOffer.offered_price).toFixed(0)}
-                      </span>
-                    )}
+                    {latestCounterOffer
+                      ? <span>Latest counter-offer: <span style={{ color: '#0ea5e9', fontWeight: 600 }}>₹{parseFloat(latestCounterOffer.offered_price).toFixed(0)}</span></span>
+                      : 'No counter-offer yet'
+                    }
                   </div>
                 </div>
 
@@ -455,7 +506,7 @@ export default function TaskPosterNegotiation() {
                 )}
               </div>
 
-              {/* Messages area */}
+              {/* Messages */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px', background: '#f8fafc' }}>
                 {msgLoading ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
@@ -470,26 +521,19 @@ export default function TaskPosterNegotiation() {
                 ) : (
                   Object.entries(grouped).map(([date, msgs]) => (
                     <div key={date}>
-                      {/* Date label */}
                       <div style={{ textAlign: 'center', margin: '14px 0 10px' }}>
                         <span style={{ background: '#e2e8f0', color: '#64748b', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>{date}</span>
                       </div>
-
                       {msgs.map((msg, idx) => {
                         const isOwn = msg.sender_id === user?.id;
                         return (
-                          <div
-                            key={msg.id || idx}
-                            style={{ display: 'flex', gap: 8, marginBottom: 8, flexDirection: isOwn ? 'row-reverse' : 'row', alignItems: 'flex-end' }}
-                          >
-                            {/* Other-user avatar */}
+                          <div key={msg.id || idx} style={{ display: 'flex', gap: 8, marginBottom: 8, flexDirection: isOwn ? 'row-reverse' : 'row', alignItems: 'flex-end' }}>
                             {!isOwn && (
                               <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#e2e8f0', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
                                 {selectedInitial}
                               </div>
                             )}
                             <div style={{ maxWidth: '68%' }}>
-                              {/* Bubble */}
                               <div style={{
                                 padding: '9px 13px',
                                 borderRadius: isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
@@ -500,6 +544,7 @@ export default function TaskPosterNegotiation() {
                                 boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                               }}>
                                 {msg.content}
+                                {/* Show offered price badge inline if present */}
                                 {msg.offered_price && (
                                   <div style={{
                                     marginTop: 6,
@@ -510,11 +555,10 @@ export default function TaskPosterNegotiation() {
                                     fontSize: 11, fontWeight: 700,
                                     color: isOwn ? '#FFD93D' : '#166534',
                                   }}>
-                                    <IndianRupee size={10} /> {parseFloat(msg.offered_price).toFixed(0)} offer
+                                    <IndianRupee size={10} /> {parseFloat(msg.offered_price).toFixed(0)} offered
                                   </div>
                                 )}
                               </div>
-                              {/* Timestamp */}
                               <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, textAlign: isOwn ? 'right' : 'left', paddingLeft: isOwn ? 0 : 3, paddingRight: isOwn ? 3 : 0 }}>
                                 {fmtTime(msg.created_at)}
                               </div>
@@ -526,7 +570,7 @@ export default function TaskPosterNegotiation() {
                   ))
                 )}
 
-                {/* Counter-offer action card */}
+                {/* Counter-offer action card — shown when freelancer has a pending offer different from current price */}
                 {latestCounterOffer && parseFloat(latestCounterOffer.offered_price) !== parseFloat(finalPrice) && (
                   <div style={{ background: 'white', border: '2px solid #0ea5e9', borderRadius: 14, padding: '14px 18px', margin: '14px 0', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 8px rgba(14,165,233,0.1)' }}>
                     <div style={{ flex: 1 }}>
@@ -537,23 +581,25 @@ export default function TaskPosterNegotiation() {
                         <IndianRupee size={16} />{parseFloat(latestCounterOffer.offered_price).toFixed(0)}
                       </p>
                       <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-                        Your current task price: ₹{parseFloat(finalPrice).toFixed(0)}
+                        Current task price: ₹{parseFloat(finalPrice).toFixed(0)}
                       </p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {/* This button creates an order = true acceptance */}
                       <button
-                        onClick={handleAcceptCounterOffer}
+                        onClick={handleAcceptOffer}
                         disabled={accepting}
-                        style={{ background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 9, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+                        style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 9, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
                       >
                         {accepting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle size={13} />}
-                        Accept ₹{parseFloat(latestCounterOffer.offered_price).toFixed(0)}
+                        Accept & Start Order
                       </button>
+                      {/* This button proposes a new price (no order created) */}
                       <button
                         onClick={() => { setPriceInput(String(finalPrice)); setEditingPrice(true); }}
                         style={{ background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 9, padding: '6px 16px', fontWeight: 600, fontSize: 12, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', gap: 5 }}
                       >
-                        <RotateCcw size={12} /> Make Counter-Offer
+                        <RotateCcw size={12} /> Propose Different Price
                       </button>
                     </div>
                   </div>

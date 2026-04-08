@@ -28,11 +28,24 @@ exports.acceptFreelancerOffer = async (req, res) => {
     // Update task status
     await pool.query("UPDATE tasks SET status = 'In Progress' WHERE id = $1", [taskId]);
 
+    // Update offer status to 'Accepted'
+    await pool.query(
+      `UPDATE offers SET status = 'Accepted', updated_at = NOW()
+       WHERE task_id = $1 AND freelancer_id = $2 AND status = 'Pending'`,
+      [taskId, freelancer_id]
+    );
+
     // Create notification for freelancer
     await pool.query(
-      `INSERT INTO notifications (user_id, title, message, type, is_read)
-       VALUES ($1, $2, $3, $4, FALSE)`,
-      [freelancer_id, 'Offer Accepted', `Your offer for "${taskCheck.rows[0].title}" was accepted!`, 'order']
+      `INSERT INTO notifications (user_id, title, message, type, link)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        freelancer_id,
+        'Offer Accepted',
+        `Your offer for "${taskCheck.rows[0].title}" was accepted!`,
+        'order',
+        `/orders/${newOrder.rows[0].id}`
+      ]
     );
 
     res.status(201).json({
@@ -83,9 +96,15 @@ exports.applyForTask = async (req, res) => {
 
     // Create notification for task poster
     await pool.query(
-      `INSERT INTO notifications (user_id, title, message, type, is_read)
-       VALUES ($1, $2, $3, $4, FALSE)`,
-      [task.rows[0].poster_id, 'New Application', `New application for "${task.rows[0].title}"`, 'task']
+      `INSERT INTO notifications (user_id, title, message, type, link)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        task.rows[0].poster_id,
+        'New Offer',
+        `New offer of ₹${offered_price || task.rows[0].price} for "${task.rows[0].title}"${message ? ': ' + message : ''}`,
+        'negotiation',
+        `/negotiate-poster/${taskId}`
+      ]
     );
 
     res.status(201).json({
@@ -254,11 +273,35 @@ exports.createOrder = async (req, res) => {
     const { freelancer_id, task_id, agreed_price } = req.body;
     const poster_id = req.user.id;
 
+    // Fetch task details for notification
+    const task = await pool.query('SELECT title FROM tasks WHERE id = $1', [task_id]);
+    const taskTitle = task.rows[0]?.title || 'Task';
+
     const newOrder = await pool.query(
       `INSERT INTO orders (poster_id, freelancer_id, task_id, agreed_price, status, created_at, updated_at)
        VALUES ($1, $2, $3, $4, 'pending', NOW(), NOW())
        RETURNING *`,
       [poster_id, freelancer_id, task_id, agreed_price]
+    );
+
+    // Update offer status to 'Accepted'
+    await pool.query(
+      `UPDATE offers SET status = 'Accepted', updated_at = NOW()
+       WHERE task_id = $1 AND freelancer_id = $2 AND status = 'Pending'`,
+      [task_id, freelancer_id]
+    );
+
+    // Create notification for freelancer - their offer was accepted
+    await pool.query(
+      `INSERT INTO notifications (user_id, title, message, type, link)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        freelancer_id,
+        'Offer Accepted',
+        `Your offer of ₹${agreed_price} was accepted for "${taskTitle}"`,
+        'order',
+        `/orders/${newOrder.rows[0].id}`
+      ]
     );
 
     res.status(201).json({ order: newOrder.rows[0], message: 'Order created successfully' });
@@ -296,5 +339,51 @@ exports.getTaskOffers = async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
+  }
+};
+
+// REJECT OFFER (task poster rejects a freelancer's offer)
+exports.rejectOffer = async (req, res) => {
+  try {
+    const { taskId, freelancerId } = req.body;
+    const poster_id = req.user.id;
+
+    if (!taskId || !freelancerId) {
+      return res.status(400).json({ message: 'Task ID and freelancer ID are required' });
+    }
+
+    // Verify the task belongs to this user
+    const taskCheck = await pool.query(
+      'SELECT * FROM tasks WHERE id = $1 AND poster_id = $2',
+      [taskId, poster_id]
+    );
+    if (taskCheck.rows.length === 0) {
+      return res.status(404).json({ message: 'Task not found or you are not the poster' });
+    }
+
+    // Update offer status to 'Rejected'
+    await pool.query(
+      `UPDATE offers SET status = 'Rejected', updated_at = NOW()
+       WHERE task_id = $1 AND freelancer_id = $2 AND status = 'Pending'`,
+      [taskId, freelancerId]
+    );
+
+    // Create notification for freelancer
+    await pool.query(
+      `INSERT INTO notifications (user_id, title, message, type, link)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        freelancerId,
+        'Offer Declined',
+        `Your offer for "${taskCheck.rows[0].title}" was not accepted.`,
+        'task',
+        `/tasks/${taskId}`
+      ]
+    );
+
+    res.json({ message: 'Offer rejected successfully' });
+  } catch (err) {
+    console.error('❌ REJECT OFFER ERROR:', err);
+    res.status(500).json({ message: 'Failed to reject offer' });
   }
 };

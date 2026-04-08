@@ -169,9 +169,9 @@ export default function Messages() {
                     </div>
                     {/* Task Name - Always visible for negotiation conversations */}
                     {conv.task_title && (
-                      <p className="text-xs text-slate-700 font-medium mt-0.5 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
-                        {conv.task_title}
+                      <p className="text-xs text-slate-600 font-medium mt-0.5 mb-0.5 flex items-center gap-1.5">
+                        <span className="w-2 h-2 bg-yellow-400 rounded-full flex-shrink-0"></span>
+                        <span className="truncate">{conv.task_title}</span>
                       </p>
                     )}
                     <p className="text-sm text-slate-500 truncate">
