@@ -298,7 +298,7 @@ exports.createOrder = async (req, res) => {
       [
         freelancer_id,
         'Offer Accepted',
-        `Your offer of ₹${agreed_price} was accepted for "${taskTitle}"`,
+        `Your offer of ₹${agreed_price} was accepted`,
         'order',
         `/orders/${newOrder.rows[0].id}`
       ]

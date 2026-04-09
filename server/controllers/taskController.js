@@ -215,6 +215,17 @@ exports.updateTaskPriceFromNegotiation = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this task' });
     }
 
+    // Get freelancer's previous offer amount
+    const prevOfferResult = await pool.query(
+      `SELECT offered_price FROM offers
+       WHERE task_id = $1 AND freelancer_id = $2 AND status = 'Pending'
+       ORDER BY created_at DESC LIMIT 1`,
+      [taskId, freelancerId]
+    );
+    const prevOffer = prevOfferResult.rows.length > 0
+      ? prevOfferResult.rows[0].offered_price
+      : newPrice;
+
     // Update task price
     const updated = await pool.query(
       'UPDATE tasks SET price=$1, updated_at=NOW() WHERE id=$2 RETURNING *',
@@ -235,7 +246,7 @@ exports.updateTaskPriceFromNegotiation = async (req, res) => {
       [
         freelancerId,
         'Counter-Offer',
-        `The poster countered your offer with ₹${newPrice} for "${taskCheck.rows[0].title}"`,
+        `Your offer of ₹${prevOffer} was countered`,
         'negotiation',
         `/negotiate-poster/${taskId}`
       ]

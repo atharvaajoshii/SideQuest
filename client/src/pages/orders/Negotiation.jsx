@@ -1,14 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Send, User, Loader2, CheckCircle, DollarSign } from 'lucide-react';
+import { Send, User, Loader2, CheckCircle, DollarSign, IndianRupee } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL;
+
+// Detect currency based on locale
+const getCurrencySymbol = () => {
+  const locale = navigator.language || 'en-IN';
+  if (locale.includes('IN') || locale.includes('hi')) return '₹';
+  if (locale.includes('US')) return '$';
+  if (locale.includes('GB')) return '£';
+  if (locale.includes('EU') || locale.includes('de') || locale.includes('fr')) return '€';
+  return '₹'; // Default to INR for this app
+};
 
 export default function Negotiation() {
   const { id: taskId } = useParams();
   const navigate = useNavigate();
   const { user, token, API } = useAuth();
+  const offerInputRef = useRef(null);
 
   const [task, setTask] = useState(null);
   const [negotiation, setNegotiation] = useState(null);
@@ -18,6 +29,8 @@ export default function Negotiation() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [offerError, setOfferError] = useState('');
+  const currencySymbol = getCurrencySymbol();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,9 +66,23 @@ export default function Negotiation() {
     fetchData();
   }, [taskId, API, navigate, token]);
 
+  // Autofocus offer input on load
+  useEffect(() => {
+    if (offerInputRef.current && !loading) {
+      offerInputRef.current.focus();
+    }
+  }, [loading]);
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim()) return;
+
+    // Validate offer: must be a positive number
+    const numericOffer = parseFloat(offer);
+    if (!offer || offer.trim() === '' || isNaN(numericOffer) || numericOffer <= 0) {
+      setOfferError('Please enter a valid offer amount');
+      return;
+    }
+    setOfferError('');
 
     setSubmitting(true);
     try {
@@ -67,10 +94,10 @@ export default function Negotiation() {
         },
         body: JSON.stringify({
           receiver_id: task.poster_id,
-          content: message,
+          content: message || `Offering ₹${offer} for this task`,
           negotiation_id: negotiation?.id || null,
           task_id: parseInt(taskId),
-          offered_price: offer ? parseFloat(offer) : null,
+          offered_price: numericOffer,
         }),
       });
 
@@ -165,14 +192,27 @@ export default function Negotiation() {
           <div className="text-right">
             <span className="text-sm text-slate-500 block">Your Offer</span>
             <div className="flex items-center gap-2">
-              <DollarSign size={20} className="text-secondary" />
+              {currencySymbol === '₹' ? (
+                <IndianRupee size={20} className="text-secondary" />
+              ) : (
+                <DollarSign size={20} className="text-secondary" />
+              )}
               <input
+                ref={offerInputRef}
                 type="number"
                 value={offer}
-                onChange={(e) => setOffer(e.target.value)}
-                className="text-xl font-extrabold text-secondary w-24 text-right bg-transparent border-b-2 border-slate-300 focus:outline-none focus:border-primary"
+                onChange={(e) => {
+                  setOffer(e.target.value);
+                  if (offerError) setOfferError('');
+                }}
+                className={`text-xl font-extrabold text-secondary w-24 text-right bg-transparent border-b-2 focus:outline-none ${
+                  offerError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-primary'
+                }`}
               />
             </div>
+            {offerError && (
+              <p className="text-xs text-red-500 mt-1 text-right">{offerError}</p>
+            )}
           </div>
         </div>
 
@@ -209,7 +249,7 @@ export default function Negotiation() {
           {/* System Offer Card */}
           <div className="mx-auto bg-white border-2 border-green-500 rounded-xl p-4 max-w-sm text-center shadow-md my-6">
             <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Official Offer</span>
-            <h2 className="text-3xl font-extrabold text-slate-900 my-2">₹{offer}</h2>
+            <h2 className="text-3xl font-extrabold text-slate-900 my-2">{currencySymbol}{offer}</h2>
             <p className="text-sm text-slate-500 mb-4">You're offering to complete the task for this amount.</p>
             <button
               onClick={handleAcceptOffer}

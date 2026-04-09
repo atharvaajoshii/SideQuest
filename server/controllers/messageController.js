@@ -108,7 +108,7 @@ exports.getMessages = async (req, res) => {
 exports.sendMessage = async (req, res) => {
   try {
     const senderId = req.user.id;
-    const { receiver_id, content, order_id, negotiation_id, reply_to, offered_price } = req.body;
+    const { receiver_id, content, order_id, negotiation_id, reply_to, offered_price, task_id } = req.body;
 
     if (!receiver_id || !content) {
       return res.status(400).json({ message: 'Receiver ID and content are required' });
@@ -153,29 +153,100 @@ exports.sendMessage = async (req, res) => {
       ]);
     }
 
-    // If this is a negotiation message with an offered price, send notification
-    if (negotiation_id && offered_price) {
-      // Get task details to find the poster
-      const taskResult = await pool.query(`
-        SELECT t.poster_id, t.id as task_id, t.title, u.name as freelancer_name
-        FROM negotiations n
-        JOIN tasks t ON n.task_id = t.id
-        JOIN users u ON u.id = $1
-        WHERE n.id = $2
-      `, [senderId, negotiation_id]);
+    // If this message includes an offered price, store in offers table and trigger notification
+    if (offered_price) {
+      let targetTaskId = task_id;
+      let targetNegotiationId = negotiation_id;
 
-      if (taskResult.rows.length > 0) {
-        const { poster_id, task_id, title, freelancer_name } = taskResult.rows[0];
+      // If no negotiation_id but we have task_id, create or find negotiation
+      if (!targetNegotiationId && targetTaskId) {
+        const taskCheck = await pool.query('SELECT poster_id FROM tasks WHERE id = $1', [targetTaskId]);
+        if (taskCheck.rows.length > 0) {
+          const clientId = taskCheck.rows[0].poster_id;
 
-        // Create notification for task poster with link to negotiation page
+          // Find or create negotiation record
+          const negCheck = await pool.query(
+            `SELECT id FROM negotiations
+             WHERE task_id = $1 AND client_id = $2 AND freelancer_id = $3
+             ORDER BY created_at DESC LIMIT 1`,
+            [targetTaskId, clientId, senderId]
+          );
+
+          if (negCheck.rows.length === 0) {
+            // Create new negotiation record
+            const newNeg = await pool.query(
+              `INSERT INTO negotiations (task_id, client_id, freelancer_id, status, created_at)
+               VALUES ($1, $2, $3, 'pending', NOW())
+               RETURNING *`,
+              [targetTaskId, clientId, senderId]
+            );
+            targetNegotiationId = newNeg.rows[0].id;
+
+            // Update the message with the new negotiation_id
+            await pool.query(
+              'UPDATE messages SET negotiation_id = $1 WHERE id = $2',
+              [targetNegotiationId, newMessage.rows[0].id]
+            );
+          } else {
+            targetNegotiationId = negCheck.rows[0].id;
+          }
+        }
+      }
+
+      // Store offer in offers table (upsert - update if exists, insert if new)
+      const existingOffer = await pool.query(
+        `SELECT id FROM offers
+         WHERE task_id = $1 AND freelancer_id = $2 AND status = 'Pending'`,
+        [targetTaskId, senderId]
+      );
+
+      if (existingOffer.rows.length > 0) {
+        // Update existing offer
+        await pool.query(
+          `UPDATE offers SET offered_price = $1, updated_at = NOW()
+           WHERE task_id = $2 AND freelancer_id = $3 AND status = 'Pending'`,
+          [offered_price, targetTaskId, senderId]
+        );
+      } else {
+        // Insert new offer
+        await pool.query(
+          `INSERT INTO offers (task_id, freelancer_id, offered_price, message, status, created_at)
+           VALUES ($1, $2, $3, $4, 'Pending', NOW())`,
+          [targetTaskId, senderId, offered_price, content]
+        );
+      }
+
+      // Get task and user details for notification
+      let taskResult;
+      if (targetTaskId) {
+        taskResult = await pool.query(`
+          SELECT t.poster_id, t.id as task_id, t.title, u.name as freelancer_name
+          FROM tasks t
+          JOIN users u ON u.id = $1
+          WHERE t.id = $2
+        `, [senderId, targetTaskId]);
+      } else if (targetNegotiationId) {
+        taskResult = await pool.query(`
+          SELECT t.poster_id, t.id as task_id, t.title, u.name as freelancer_name
+          FROM negotiations n
+          JOIN tasks t ON n.task_id = t.id
+          JOIN users u ON u.id = $1
+          WHERE n.id = $2
+        `, [senderId, targetNegotiationId]);
+      }
+
+      if (taskResult && taskResult.rows.length > 0) {
+        const { poster_id, task_id: tid, title, freelancer_name } = taskResult.rows[0];
+
+        // Create notification for task poster
         await pool.query(`
           INSERT INTO notifications (user_id, title, message, type, link)
           VALUES ($1, $2, $3, 'negotiation', $4)
         `, [
           poster_id,
-          'New Counter-Offer',
-          `${freelancer_name} offered ₹${offered_price} for "${title}"`,
-          `/negotiate-poster/${task_id}`
+          'New Offer Received',
+          `${freelancer_name} offered ₹${offered_price} for your task`,
+          `/negotiate-poster/${tid}`
         ]);
       }
     }
