@@ -22,7 +22,7 @@ SideQuest bridges this gap by creating a platform where students can discover me
 
 * Frontend: React.js
 * Backend: Node.js, Express.js
-* Database: MongoDB
+* Database: PostgreSQL
 * Authentication: JWT / Secure Authentication
 * Styling: Tailwind CSS
 
